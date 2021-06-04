@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "ecsctl"
+version = "0.1.0"
+description = ""
+authors = ["Nick Van Dyck <vandyck.nick@outlook.com>"]
+
+[tool.poetry.scripts]
+ecsctl = "ecsctl.__main__:main"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+boto3 = "^1.17.87"
+rich = "^10.2.2"
+click = "^8.0.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^21.5b2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
