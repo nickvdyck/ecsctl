@@ -30,6 +30,7 @@ class Config:
 
             self.profile = data.get("profile", None)
             self.default_cluster = data.get("default_cluster", None)
+            self.meets_ssm_prereqs = data.get("meets_ssm_prereqs", False)
 
     def set_profile(self, profile: str):
         self.profile = profile
@@ -37,10 +38,17 @@ class Config:
     def set_default_cluster(self, default_cluster: str):
         self.default_cluster = default_cluster
 
+    def set_meets_ssm_prereqs(self):
+        self.meets_ssm_prereqs = True
+
     def save(self):
         with open(self.config_path, "w") as config_file:
             config_json = self.to_json()
             config_file.write(json.dumps(config_json))
 
     def to_json(self):
-        return {"profile": self.profile, "default_cluster": self.default_cluster}
+        return {
+            "profile": self.profile,
+            "default_cluster": self.default_cluster,
+            "meets_ssm_prereqs": self.meets_ssm_prereqs,
+        }
