@@ -1,6 +1,6 @@
 import boto3
 
-from typing import List
+from typing import List, Optional
 from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task
 from ecsctl.serializers import (
     deserialize_ec2_instance,
@@ -102,17 +102,29 @@ class EcsApi:
         service = deserialize_ecs_service(descriptor["services"][0])
         return service.events
 
-    def get_tasks_for_service(
-        self, cluster: str, service_name: str, status: str = "RUNNING"
+    def get_tasks(
+        self,
+        cluster: str,
+        task_names_or_arns: Optional[List[str]] = None,
+        instance: Optional[str] = None,
+        service: Optional[str] = None,
+        status: str = "RUNNING",
     ) -> List[Task]:
         def list_all_task_arns(next_token=None, desired_status: str = "RUNNING"):
-            response = self.client.list_tasks(
-                cluster=cluster,
-                serviceName=service_name,
-                maxResults=100,
-                desiredStatus=desired_status,
-                nextToken=next_token or "",
-            )
+            args = {
+                "cluster": cluster,
+                "maxResults": 100,
+                "desiredStatus": desired_status,
+                "nextToken": next_token or "",
+            }
+
+            if instance is not None:
+                args["containerInstance"] = instance
+
+            if service is not None:
+                args["serviceName"] = service
+
+            response = self.client.list_tasks(**args)
 
             task_arns = response["taskArns"]
             next_token = response.get("nextToken", None)
@@ -123,12 +135,15 @@ class EcsApi:
                 else task_arns
             )
 
+        if len(task_names_or_arns) == 0:
         task_arns = (
             list_all_task_arns(desired_status=status.upper())
             if status.upper() != "ALL"
             else list_all_task_arns(desired_status="RUNNING")
             + list_all_task_arns(desired_status="STOPPED")
         )
+        else:
+            task_arns = task_names_or_arns
 
         tasks = []
 

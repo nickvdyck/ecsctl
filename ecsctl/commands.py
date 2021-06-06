@@ -13,7 +13,7 @@ from ecsctl.serializers import (
     serialize_ecs_task,
 )
 from ecsctl.console import Color, Console
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 
 class Dependencies:
@@ -133,23 +133,37 @@ def get_events(ctx: Context, service_name: str, cluster: str):
 
 
 @get.command(name="tasks")
-@click.argument("service_name", nargs=1, required=True)
+@click.argument("task_names", nargs=-1, required=False)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
-@click.option("-s", "--status", default="RUNNING")
+@click.option("-s", "--service", required=False)
+@click.option("-i", "--instance", required=False)
+@click.option("--status", default="RUNNING")
 @click.pass_context
-def get_tasks(ctx: Context, service_name: str, cluster: str, status: str):
+def get_tasks(
+    ctx: Context,
+    cluster: str,
+    task_names: Optional[List[str]],
+    instance: Optional[str],
+    service: Optional[str],
+    status: Optional[str],
+):
     (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
-    tasks = ecs_api.get_tasks_for_service(
+    tasks = ecs_api.get_tasks(
         cluster or config.default_cluster,
-        service_name=service_name,
+        task_names_or_arns=list(task_names),
+        instance=instance,
+        service=service,
         status=status,
     )
 
     if props.get("output", None) == "json":
         console.print(json.dumps([serialize_ecs_task(task) for task in tasks]))
     else:
+        if len(tasks) > 0:
         console.table(tasks)
+        else:
+            console.print("No tasks found for the given search criteria")
 
 
 @cli.command(short_help="Execute commands inside an ECS cluster")
