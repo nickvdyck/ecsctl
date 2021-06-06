@@ -11,10 +11,13 @@ from ecsctl.utils import chunks
 
 
 class EcsApi:
-    def __init__(self, profile: str = None):
-        if profile is not None:
-            boto3.setup_default_session(profile_name=profile)
-        self.client = boto3.client("ecs")
+    def __init__(self, profile: str = None, region: str = None):
+        session = boto3.session.Session(
+            profile_name=profile,
+            region_name=region,
+        )
+
+        self.client = session.client("ecs")
 
     def get_clusters(self, cluster_names: List[str]) -> List[Cluster]:
         cluster_arns = (
