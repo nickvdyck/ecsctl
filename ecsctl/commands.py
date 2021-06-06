@@ -4,15 +4,15 @@ import os
 import subprocess
 
 from click import Context
+from ecsctl import console
 from ecsctl.api import EcsApi
 from ecsctl.config import Config
-from ecsctl.utils import render_table
 from ecsctl.serializers import (
     serialize_ecs_cluster,
     serialize_ecs_service,
     serialize_ecs_task,
 )
-from rich.console import Console
+from ecsctl.console import Color, Console
 from typing import List, Tuple, Dict
 
 
@@ -40,7 +40,7 @@ def get_dependencies(
 def cli(ctx: Context, profile: str, region: str, output: str):
     config = Config()
     # TODO: bail out when profile is None
-    ecs_api = EcsApi(profile or config.profile)
+    ecs_api = EcsApi(profile or config.profile, region)
     console = Console()
 
     ctx.obj = Dependencies(
@@ -71,10 +71,8 @@ def get_clusters(ctx: Context, cluster_names: List[str]):
             [serialize_ecs_cluster(cluster) for cluster in clusters]
         )
         console.print(cluster_json)
-    elif props.get("output", None) == "pretty":
-        console.print([serialize_ecs_cluster(cluster) for cluster in clusters])
     else:
-        render_table(clusters)
+        console.table(clusters)
 
 
 @get.command(name="instances")
@@ -82,13 +80,13 @@ def get_clusters(ctx: Context, cluster_names: List[str]):
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.pass_context
 def get_instances(ctx: Context, instance_names: List[str], cluster: str):
-    (config, ecs_api, _, _) = get_dependencies(ctx.obj)
+    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
 
     instances = ecs_api.get_instances(
         cluster or config.default_cluster, instance_names=list(instance_names)
     )
 
-    render_table(instances)
+    console.table(instances)
 
 
 @get.command(name="services")
@@ -108,10 +106,8 @@ def get_services(ctx: Context, service_names: List[str], cluster: str):
         console.print(
             json.dumps([serialize_ecs_service(service) for service in services])
         )
-    elif props.get("output", None) == "pretty":
-        console.print([serialize_ecs_service(service) for service in services])
     else:
-        render_table(services)
+        console.table(services)
 
 
 @get.command(name="events")
@@ -119,14 +115,14 @@ def get_services(ctx: Context, service_names: List[str], cluster: str):
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.pass_context
 def get_events(ctx: Context, service_name: str, cluster: str):
-    (config, ecs_api, _, _) = get_dependencies(ctx.obj)
+    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
 
     events = ecs_api.get_events_for_service(
         cluster or config.default_cluster, service_name=service_name
     )
 
     events = sorted(events, key=lambda x: x.created_at, reverse=True)
-    render_table(events)
+    console.table(events)
 
     # if props.get("output", None) == "json":
     #     print(json.dumps([serialize_ecs_service(service) for service in services]))
@@ -152,10 +148,8 @@ def get_tasks(ctx: Context, service_name: str, cluster: str, status: str):
 
     if props.get("output", None) == "json":
         console.print(json.dumps([serialize_ecs_task(task) for task in tasks]))
-    elif props.get("output", None) == "pretty":
-        console.print([serialize_ecs_task(task) for task in tasks])
     else:
-        render_table(tasks)
+        console.table(tasks)
 
 
 @cli.command(short_help="Execute commands inside an ECS cluster")
@@ -174,16 +168,19 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
 
     if not config.meets_ssm_prereqs:
         console.print(
-            "[yellow]This feature requires the following to be setup correctly:[/yellow]"
+            "This feature requires the following to be setup correctly:",
+            color=Color.YELLOW,
         )
         console.print(
-            "[yellow]     - You have the AWS cli installed and available on your PATH.[/yellow]"
+            "     - You have the AWS cli installed and available on your PATH.",
+            color=Color.YELLOW,
         )
         console.print(
-            "[yellow]     - You have SSM setup and working correctly.[/yellow]"
+            "     - You have SSM setup and working correctly.", color=Color.YELLOW
         )
         console.print(
-            "[yellow]     - You have the SSM AWS cli plugin installed: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html[/yellow]"
+            "     - You have the SSM AWS cli plugin installed: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html[/yellow]",
+            color=Color.YELLOW,
         )
         console.print("")
 
