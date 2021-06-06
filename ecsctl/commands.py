@@ -11,6 +11,7 @@ from ecsctl.serializers import (
     serialize_ecs_cluster,
     serialize_ecs_instance,
     serialize_ecs_service,
+    serialize_ecs_service_event,
     serialize_ecs_task,
 )
 from ecsctl.console import Color, Console
@@ -129,21 +130,20 @@ def get_services(ctx: Context, service_names: List[str], cluster: str):
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.pass_context
 def get_events(ctx: Context, service_name: str, cluster: str):
-    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
+    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
     events = ecs_api.get_events_for_service(
         cluster or config.default_cluster, service_name=service_name
     )
 
     events = sorted(events, key=lambda x: x.created_at, reverse=True)
-    console.table(events)
 
-    # if props.get("output", None) == "json":
-    #     print(json.dumps([serialize_ecs_service(service) for service in services]))
-    # if props.get("output", None) == "pretty":
-    #     print([serialize_ecs_service(service) for service in services])
-    # else:
-    #     render_table(services)
+    if props.get("output", None) == "json":
+        console.print(
+            json.dumps([serialize_ecs_service_event(event) for event in events])
+        )
+    else:
+        console.table(events)
 
 
 @get.command(name="tasks")

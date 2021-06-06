@@ -28,7 +28,7 @@ def deserialize_ecs_service(service: Dict[str, Any]) -> Service:
         service["createdAt"],
         service.get("createdBy", None),
         service["schedulingStrategy"],
-        [deserialize_ecs_service_events(event) for event in service.get("events", [])],
+        [deserialize_ecs_service_event(event) for event in service.get("events", [])],
     )
 
 
@@ -50,12 +50,20 @@ def serialize_ecs_service(service: Service) -> Dict[str, Any]:
     }
 
 
-def deserialize_ecs_service_events(event: Dict[str, str]) -> ServiceEvent:
+def deserialize_ecs_service_event(event: Dict[str, str]) -> ServiceEvent:
     return ServiceEvent(
         event["id"],
         event["createdAt"],
         event["message"],
     )
+
+
+def serialize_ecs_service_event(event: ServiceEvent) -> Dict[str, str]:
+    return {
+        "id": event.id,
+        "created_at": event.created_at,
+        "message": event.message,
+    }
 
 
 def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
