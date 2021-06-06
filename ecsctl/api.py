@@ -3,7 +3,7 @@ import boto3
 from typing import List, Optional
 from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task
 from ecsctl.serializers import (
-    deserialize_ec2_instance,
+    deserialize_ecs_instance,
     deserialize_ecs_service,
     deserialize_ecs_task,
 )
@@ -44,7 +44,24 @@ class EcsApi:
     def get_instances(
         self, cluster_name: str, instance_names: List[str]
     ) -> List[Instance]:
-        instance_arns = instance_names
+        def list_all_instance_arns(next_token: Optional[str] = None):
+            response = self.client.list_container_instances(
+                cluster=cluster_name,
+                maxResults=100,
+                nextToken=next_token or "",
+            )
+
+            instance_arns = response["containerInstanceArns"]
+            next_token = response.get("nexttoken", None)
+            return (
+                instance_arns + list_all_instance_arns(next_token)
+                if next_token is not None
+                else instance_arns
+            )
+
+        instance_arns = (
+            list_all_instance_arns() if len(instance_names) == 0 else instance_names
+        )
 
         instances = []
 
@@ -54,7 +71,7 @@ class EcsApi:
             )
 
             instances = instances + [
-                deserialize_ec2_instance(instance)
+                deserialize_ecs_instance(instance)
                 for instance in descriptor["containerInstances"]
             ]
 
@@ -136,12 +153,12 @@ class EcsApi:
             )
 
         if len(task_names_or_arns) == 0:
-        task_arns = (
-            list_all_task_arns(desired_status=status.upper())
-            if status.upper() != "ALL"
-            else list_all_task_arns(desired_status="RUNNING")
-            + list_all_task_arns(desired_status="STOPPED")
-        )
+            task_arns = (
+                list_all_task_arns(desired_status=status.upper())
+                if status.upper() != "ALL"
+                else list_all_task_arns(desired_status="RUNNING")
+                + list_all_task_arns(desired_status="STOPPED")
+            )
         else:
             task_arns = task_names_or_arns
 

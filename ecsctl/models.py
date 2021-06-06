@@ -48,7 +48,7 @@ class Instance:
         running_tasks: int,
         pending_tasks: int,
         agent_update_status: str,
-        registered_at: str,
+        registered_at: datetime,
     ):
         self.id = arn.split("/")[-1]
         self.arg = arn

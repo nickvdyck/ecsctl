@@ -119,7 +119,7 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
     return task_json
 
 
-def deserialize_ec2_instance(instance: Dict[str, Any]) -> Instance:
+def deserialize_ecs_instance(instance: Dict[str, Any]) -> Instance:
     return Instance(
         instance["containerInstanceArn"],
         instance["ec2InstanceId"],
@@ -130,3 +130,14 @@ def deserialize_ec2_instance(instance: Dict[str, Any]) -> Instance:
         instance.get("agentUpdateStatus", None),
         instance["registeredAt"],
     )
+
+
+def serialize_ecs_instance(instance: Instance) -> Dict[str, Any]:
+    return {
+        "id": instance.id,
+        "ec2_instance": instance.ec2_instance,
+        "status": instance.status,
+        "running_tasks": instance.running_tasks,
+        "pending_tasks": instance.pending_tasks,
+        "registered_at": instance.registered_at.isoformat(),
+    }

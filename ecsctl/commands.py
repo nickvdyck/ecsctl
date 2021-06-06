@@ -9,6 +9,7 @@ from ecsctl.api import EcsApi
 from ecsctl.config import Config
 from ecsctl.serializers import (
     serialize_ecs_cluster,
+    serialize_ecs_instance,
     serialize_ecs_service,
     serialize_ecs_task,
 )
@@ -78,15 +79,28 @@ def get_clusters(ctx: Context, cluster_names: List[str]):
 @get.command(name="instances")
 @click.argument("instance_names", nargs=-1)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.option("--sort-by", required=False, default="registered_at")
 @click.pass_context
-def get_instances(ctx: Context, instance_names: List[str], cluster: str):
-    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
+def get_instances(
+    ctx: Context,
+    cluster: str,
+    instance_names: Optional[List[str]],
+    sort_by: Optional[str],
+):
+    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
     instances = ecs_api.get_instances(
         cluster or config.default_cluster, instance_names=list(instance_names)
     )
 
-    console.table(instances)
+    instances = sorted(instances, key=lambda x: x.__dict__[sort_by], reverse=True)
+
+    if props.get("output", None) == "json":
+        console.print(
+            json.dumps([serialize_ecs_instance(instance) for instance in instances])
+        )
+    else:
+        console.table(instances)
 
 
 @get.command(name="services")
@@ -161,7 +175,7 @@ def get_tasks(
         console.print(json.dumps([serialize_ecs_task(task) for task in tasks]))
     else:
         if len(tasks) > 0:
-        console.table(tasks)
+            console.table(tasks)
         else:
             console.print("No tasks found for the given search criteria")
 
