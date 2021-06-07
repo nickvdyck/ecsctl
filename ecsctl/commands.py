@@ -199,6 +199,24 @@ def get_containers(ctx: Context, cluster: str, task_name: str):
         console.table(containers)
 
 
+@get.command(name="definitions")
+@click.argument("definition_family_rev_or_arn")
+@click.pass_context
+def get_containers(ctx: Context, definition_family_rev_or_arn: str):
+    (_, ecs_api, _, console) = get_dependencies(ctx.obj)
+
+    definition = ecs_api.get_task_definition(
+        definition_family_rev_or_arn=definition_family_rev_or_arn
+    )
+
+    definition["registeredAt"] = definition["registeredAt"].isoformat()
+
+    if definition.get("deregisteredAt", None) is not None:
+        definition["deregisteredAt"] = definition["deregisteredAt"].isoformat()
+
+    console.print(json.dumps(definition))
+
+
 @cli.command(short_help="Execute commands inside an ECS cluster")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", required=False)

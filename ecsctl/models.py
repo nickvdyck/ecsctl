@@ -240,3 +240,7 @@ class Task:
             self.container_instance_arn = container_instance_arn
 
         self.containers = containers
+
+
+class TaskDefinition:
+    pass
