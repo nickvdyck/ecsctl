@@ -173,6 +173,10 @@ class EcsApi:
             tasks = tasks + [deserialize_ecs_task(task) for task in descriptor["tasks"]]
         return tasks
 
+    def get_containers(self, cluster: str, task_name):
+        task = self.get_task_by_id_or_arn(cluster, task_id_or_arn=task_name)
+        return task.containers
+
     def get_task_by_id_or_arn(self, cluster: str, task_id_or_arn: str) -> Task:
         descriptor = self.client.describe_tasks(
             cluster=cluster,

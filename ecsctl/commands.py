@@ -180,6 +180,21 @@ def get_tasks(
             console.print("No tasks found for the given search criteria")
 
 
+@get.command(name="containers")
+@click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.argument("task_name")
+@click.pass_context
+def get_containers(ctx: Context, cluster: str, task_name: str):
+    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
+
+    containers = ecs_api.get_containers(cluster or config.default_cluster, task_name)
+
+    if len(containers) == 0:
+        console.print("No containers found for the given search criteria.")
+    else:
+        console.table(containers)
+
+
 @cli.command(short_help="Execute commands inside an ECS cluster")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", required=False)
@@ -222,34 +237,34 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
         else:
             return
 
-        task = ecs_api.get_task_by_id_or_arn(cluster or config.default_cluster, task)
+    task = ecs_api.get_task_by_id_or_arn(cluster or config.default_cluster, task)
 
-        constainer_instances = ecs_api.get_instances(
-            cluster or config.default_cluster, [task.container_instance_id]
-        )
+    constainer_instances = ecs_api.get_instances(
+        cluster or config.default_cluster, [task.container_instance_id]
+    )
 
-        ec2_instance = constainer_instances[0].ec2_instance
+    ec2_instance = constainer_instances[0].ec2_instance
 
-        if props.get("profile", None) is None:
-            cmd = ["aws", "ssm", "start-session", "--target", ec2_instance]
-        else:
-            cmd = [
-                "aws",
-                "--profile",
-                props.get("profile"),
-                "ssm",
-                "start-session",
-                "--target",
-                ec2_instance,
-            ]
+    if props.get("profile", None) is None:
+        cmd = ["aws", "ssm", "start-session", "--target", ec2_instance]
+    else:
+        cmd = [
+            "aws",
+            "--profile",
+            props.get("profile"),
+            "ssm",
+            "start-session",
+            "--target",
+            ec2_instance,
+        ]
 
-        env = os.environ.copy()
+    env = os.environ.copy()
 
-        shell = subprocess.Popen(cmd, env=env)
+    shell = subprocess.Popen(cmd, env=env)
 
-        while True:
-            try:
-                shell.wait()
-                break
-            except KeyboardInterrupt as _:
-                pass
+    while True:
+        try:
+            shell.wait()
+            break
+        except KeyboardInterrupt as _:
+            pass

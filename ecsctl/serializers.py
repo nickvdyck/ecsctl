@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task
+from ecsctl.models import Cluster, Container, Instance, Service, ServiceEvent, Task
 
 
 def serialize_ecs_cluster(cluster: Cluster) -> Dict[str, str]:
@@ -10,6 +10,30 @@ def serialize_ecs_cluster(cluster: Cluster) -> Dict[str, str]:
         "services": cluster.services,
         "running_tasks": cluster.running_tasks,
         "pending_tasks": cluster.pending_tasks,
+    }
+
+
+def deserialize_ecs_instance(instance: Dict[str, Any]) -> Instance:
+    return Instance(
+        instance["containerInstanceArn"],
+        instance["ec2InstanceId"],
+        instance["status"],
+        instance["agentConnected"],
+        instance["runningTasksCount"],
+        instance["pendingTasksCount"],
+        instance.get("agentUpdateStatus", None),
+        instance["registeredAt"],
+    )
+
+
+def serialize_ecs_instance(instance: Instance) -> Dict[str, Any]:
+    return {
+        "id": instance.id,
+        "ec2_instance": instance.ec2_instance,
+        "status": instance.status,
+        "running_tasks": instance.running_tasks,
+        "pending_tasks": instance.pending_tasks,
+        "registered_at": instance.registered_at.isoformat(),
     }
 
 
@@ -66,6 +90,24 @@ def serialize_ecs_service_event(event: ServiceEvent) -> Dict[str, str]:
     }
 
 
+def deserialize_ecs_container(container: Dict[str, Any]) -> Container:
+    return Container(
+        container["containerArn"],
+        container["taskArn"],
+        container["name"],
+        container["image"],
+        container["imageDigest"],
+        container["runtimeId"],
+        container["lastStatus"],
+        container.get("exitCode", None),
+        container.get("reason", ""),
+        container["healthStatus"],
+        container["cpu"],
+        container.get("memory", None),
+        container.get("memoryReservation", None),
+    )
+
+
 def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
     return Task(
         task["taskArn"],
@@ -90,6 +132,7 @@ def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
         task.get("stoppedAt", None),
         task.get("stoppedReason", ""),
         task["tags"],
+        [deserialize_ecs_container(container) for container in task["containers"]],
     )
 
 
@@ -100,8 +143,6 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
         "task_definition": task.task_definition,
         "task_definition_arn": task.task_definition_arn,
         "cluster_arn": task.cluster_arn,
-        "container_instance_id": task.container_instance_id,
-        "container_instance_arn": task.container_instance_arn,
         "availability_zone": task.availability_zone,
         "connectivity": task.connectivity,
         "connectivity_at": task.connectivity_at.isoformat(),
@@ -129,27 +170,3 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
         task_json["stopped_at"] = task.stopped_at.isoformat()
 
     return task_json
-
-
-def deserialize_ecs_instance(instance: Dict[str, Any]) -> Instance:
-    return Instance(
-        instance["containerInstanceArn"],
-        instance["ec2InstanceId"],
-        instance["status"],
-        instance["agentConnected"],
-        instance["runningTasksCount"],
-        instance["pendingTasksCount"],
-        instance.get("agentUpdateStatus", None),
-        instance["registeredAt"],
-    )
-
-
-def serialize_ecs_instance(instance: Instance) -> Dict[str, Any]:
-    return {
-        "id": instance.id,
-        "ec2_instance": instance.ec2_instance,
-        "status": instance.status,
-        "running_tasks": instance.running_tasks,
-        "pending_tasks": instance.pending_tasks,
-        "registered_at": instance.registered_at.isoformat(),
-    }

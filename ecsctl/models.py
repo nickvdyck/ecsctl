@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Literal, Union
 from datetime import datetime
 
 
@@ -120,6 +120,50 @@ class Service:
         # "placementConstraints"
         # "placementStrategy"
         # "networkConfiguration"
+
+
+class Container:
+    DEFAULT_COLUMNS = [
+        "id",
+        "name",
+        "image",
+        "health",
+        "status",
+        "exit_code",
+        "reason",
+    ]
+
+    def __init__(
+        self,
+        arn: str,
+        task_arn: str,
+        name: str,
+        image: str,
+        image_digest: str,
+        runtime_id: str,
+        status: str,
+        exit_code: int,
+        reason: str,
+        health: Literal["HEALTHY", "UNHEALTHY", "UNKNOWN"],
+        cpu: int,
+        memory: int,
+        memory_reservation: int,
+    ):
+        self.id = arn.split("/")[-1]
+        self.arn = arn
+        self.task_id = task_arn.split("/")[-1]
+        self.task_arn = task_arn
+        self.name = name
+        self.image = image
+        self.image_digest = image_digest
+        self.runtime_id = runtime_id
+        self.status = status
+        self.exit_code = exit_code
+        self.reason = reason
+        self.health = health
+        self.cpu = cpu
+        self.memory = memory
+        self.memory_reservation = memory_reservation
 
 
 class Task:
