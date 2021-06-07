@@ -80,6 +80,7 @@ def get_clusters(ctx: Context, cluster_names: List[str]):
 @get.command(name="instances")
 @click.argument("instance_names", nargs=-1)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.option("--status", default=None)
 @click.option("--sort-by", required=False, default="registered_at")
 @click.pass_context
 def get_instances(
@@ -87,11 +88,14 @@ def get_instances(
     cluster: str,
     instance_names: Optional[List[str]],
     sort_by: Optional[str],
+    status: Optional[str],  # TODO: make this a literal
 ):
     (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
     instances = ecs_api.get_instances(
-        cluster or config.default_cluster, instance_names=list(instance_names)
+        cluster or config.default_cluster,
+        instance_names=list(instance_names),
+        status=status,
     )
 
     instances = sorted(instances, key=lambda x: x.__dict__[sort_by], reverse=True)

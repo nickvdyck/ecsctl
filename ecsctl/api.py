@@ -1,12 +1,6 @@
 import boto3
 
-from typing import List, Optional
-from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task
-from ecsctl.serializers import (
-    deserialize_ecs_instance,
-    deserialize_ecs_service,
-    deserialize_ecs_task,
-)
+from typing import List, Literal, Optional
 from ecsctl.utils import chunks
 
 
@@ -42,9 +36,33 @@ class EcsApi:
         return clusters
 
     def get_instances(
-        self, cluster_name: str, instance_names: List[str]
+        self,
+        cluster_name: str,
+        instance_names: List[str],
+        status: Optional[
+            Literal[
+                "ALL",
+                "ACTIVE",
+                "DRAINING",
+                "REGISTERING",
+                "DEREGISTERING",
+                "REGISTRATION_FAILED",
+                "INACTIVE",
+            ]
+        ] = None,
     ) -> List[Instance]:
-        def list_all_instance_arns(next_token: Optional[str] = None):
+        def list_all_instance_arns(
+            next_token: Optional[str] = None, status: Optional[str] = None
+        ):
+            args = {
+                "cluster": cluster_name,
+                "maxResults": 100,
+                "nextToken": next_token or "",
+            }
+
+            if status is not None:
+                args["status"] = status
+
             response = self.client.list_container_instances(
                 cluster=cluster_name,
                 maxResults=100,
@@ -54,10 +72,20 @@ class EcsApi:
             instance_arns = response["containerInstanceArns"]
             next_token = response.get("nexttoken", None)
             return (
-                instance_arns + list_all_instance_arns(next_token)
+                instance_arns + list_all_instance_arns(next_token, status=status)
                 if next_token is not None
                 else instance_arns
             )
+
+        if len(instance_names) == 0:
+            instance_arns = [
+                list_all_instance_arns(status=status)
+                if (status or "").upper() != "ALL"
+                else list_all_instance_arns()
+                + list_all_instance_arns(status="INACTIVE")
+            ]
+        else:
+            instance_arns = instance_names
 
         instance_arns = (
             list_all_instance_arns() if len(instance_names) == 0 else instance_names
