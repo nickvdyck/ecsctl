@@ -207,7 +207,7 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
             "     - You have SSM setup and working correctly.", color=Color.YELLOW
         )
         console.print(
-            "     - You have the SSM AWS cli plugin installed: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html[/yellow]",
+            "     - You have the SSM AWS cli plugin installed: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html",
             color=Color.YELLOW,
         )
         console.print("")
@@ -219,8 +219,9 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
         if response.lower() == "y":
             config.set_meets_ssm_prereqs()
             config.save()
+        else:
+            return
 
-    with console.status("Looking up EC2 instance") as status:
         task = ecs_api.get_task_by_id_or_arn(cluster or config.default_cluster, task)
 
         constainer_instances = ecs_api.get_instances(
@@ -228,8 +229,6 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
         )
 
         ec2_instance = constainer_instances[0].ec2_instance
-
-        status.update(f"Launching shell in {ec2_instance}")
 
         if props.get("profile", None) is None:
             cmd = ["aws", "ssm", "start-session", "--target", ec2_instance]
@@ -247,10 +246,6 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
         env = os.environ.copy()
 
         shell = subprocess.Popen(cmd, env=env)
-        import time
-
-        time.sleep(2)
-        status.stop()
 
         while True:
             try:
