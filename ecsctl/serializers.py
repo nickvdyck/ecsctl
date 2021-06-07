@@ -71,10 +71,10 @@ def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
         task["taskArn"],
         task["taskDefinitionArn"],
         task["clusterArn"],
-        task["containerInstanceArn"],
+        task.get("containerInstanceArn", ""),
         task["availabilityZone"],
-        task["connectivity"],
-        task["connectivityAt"],
+        task.get("connectivity", None),
+        task.get("connectivityAt", None),
         task["createdAt"],
         task["lastStatus"],
         task["desiredStatus"],
@@ -83,10 +83,10 @@ def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
         task["cpu"],
         task["memory"],
         task["group"],
-        task["pullStartedAt"],
-        task["pullStoppedAt"],
-        task["startedAt"],
-        task["startedBy"],
+        task.get("pullStartedAt", None),
+        task.get("pullStoppedAt", None),
+        task.get("startedAt", None),
+        task.get("startedBy", None),
         task.get("stoppedAt", None),
         task.get("stoppedReason", ""),
         task["tags"],
@@ -120,6 +120,10 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
         "stopped_reason": task.stopped_reason,
         "tags": task.tags,
     }
+
+    if task.type == "ECS":
+        task_json["container_instance_id"] = task.container_instance_id
+        task_json["container_instance_arn"] = task.container_instance_arn
 
     if task.stopped_at is not None:
         task_json["stopped_at"] = task.stopped_at.isoformat()

@@ -141,13 +141,20 @@ class Task:
         cluster_arn: str,
         container_instance_arn: str,
         availability_zone: str,
-        connectivity: str,
+        connectivity: Literal["CONNECTED", "DISCONNECTED"],
         connectivity_at: datetime,
         created_at: datetime,
-        status: str,
+        status: Literal[
+            "PROVISIONING",
+            "ACTIVATING",
+            "RUNNING",
+            "DEPROVISIONING",
+            "DEACTIVATING",
+            "STOPPED",
+        ],
         desired_status: str,
-        health: str,
-        _type: str,
+        health: Literal["HEALTHY", "UNHEALTHY", "UNKNOWN"],
+        _type: Literal["EC2", "FARGATE", "EXTERNAL"],
         cpu: int,
         memory: int,
         group: str,
@@ -158,14 +165,13 @@ class Task:
         stopped_at: Union[datetime, None],
         stopped_reason: str,
         tags: List[str],
+        containers: List[Container],
     ):
         self.id = arn.split("/")[-1]
         self.arn = arn
-        self.task_definition = task_definition_arn.split("/")[-1].split(":")[-1]
+        self.task_definition = task_definition_arn.split("/")[-1]
         self.task_definition_arn = task_definition_arn
         self.cluster_arn = cluster_arn
-        self.container_instance_id = container_instance_arn.split("/")[-1]
-        self.container_instance_arn = container_instance_arn
         self.availability_zone = availability_zone
         self.connectivity = connectivity
         self.connectivity_at = connectivity_at
@@ -184,3 +190,9 @@ class Task:
         self.stopped_at = stopped_at
         self.stopped_reason = stopped_reason
         self.tags = tags
+
+        if self.type == "EC2":
+            self.container_instance_id = container_instance_arn.split("/")[-1]
+            self.container_instance_arn = container_instance_arn
+
+        self.containers = containers
