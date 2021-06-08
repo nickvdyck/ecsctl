@@ -42,21 +42,55 @@ def get_dependencies(
 @click.pass_context
 def cli(ctx: Context, profile: str, region: str, output: str):
     config = Config()
-    # TODO: bail out when profile is None
-    ecs_api = EcsApi(profile or config.profile, region)
     console = Console()
-
     ctx.obj = Dependencies(
         config,
-        ecs_api,
+        None,
         {"profile": profile, "output": output, "region": region},
         console,
     )
 
 
-@cli.group(short_help="Get ECS cluster resources")
-def get():
+@cli.group(short_help="ECSctl configuration")
+def config():
     pass
+
+
+@config.command(name="view")
+@click.pass_obj
+def config_view(obj: Dependencies):
+    config = obj.config
+    console = obj.console
+    console.print(json.dumps(config.to_json(), indent=4, sort_keys=True))
+
+
+@config.command(name="set")
+@click.pass_obj
+@click.argument("property", required=True)
+@click.argument("value", required=True)
+def config_set(obj: Dependencies, property: str, value: str):
+    config = obj.config
+    console = obj.console
+
+    if property == "profile":
+        config.set_profile(value)
+        config.save()
+    elif property == "default_cluster":
+        config.set_default_cluster(value)
+        config.save()
+    else:
+        console.print(f"Can't set property {property} to value {value}!", Color.RED)
+
+
+@cli.group(short_help="Get ECS cluster resources")
+@click.pass_obj
+def get(obj: Dependencies):
+    config = obj.config
+    profile = obj.props.get("profile")
+    region = obj.props.get("region")
+    # TODO: bail out when profile is None
+    ecs_api = EcsApi(profile or config.profile, region)
+    obj.ecs_api = ecs_api
 
 
 @get.command(name="clusters")

@@ -13,6 +13,7 @@ def render_column(item: Any) -> str:
 
 
 class Color:
+    RED = "\u001b[31m"
     YELLOW = "\u001b[33m"
     _RESET = "\u001b[0m"
 
