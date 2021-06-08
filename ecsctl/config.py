@@ -1,8 +1,8 @@
 import os
 import json
 
-from os.path import exists
 from pathlib import Path
+from typing import Optional
 
 
 class Config:
@@ -31,6 +31,18 @@ class Config:
             self.profile = data.get("profile", None)
             self.default_cluster = data.get("default_cluster", None)
             self.meets_ssm_prereqs = data.get("meets_ssm_prereqs", False)
+
+        self.aliases = {
+            "cluster": "clusters",
+            "instance": "instances",
+            "service": "services",
+            "task": "tasks",
+            "def": "definitions",
+            "defs": "definitions",
+        }
+
+    def resolve_alias(self, alias: str) -> Optional[str]:
+        return self.aliases.get(alias, None)
 
     def set_profile(self, profile: str):
         self.profile = profile

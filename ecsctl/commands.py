@@ -15,6 +15,7 @@ from ecsctl.serializers import (
     serialize_ecs_service_event,
     serialize_ecs_task,
 )
+from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
 from ecsctl.console import Color, Console
 from typing import List, Tuple, Dict, Optional
 
@@ -35,7 +36,7 @@ def get_dependencies(
     return (dep.config, dep.ecs_api, dep.props, dep.console)
 
 
-@click.group()
+@click.group(cls=ExceptionFormattedGroup)
 @click.option("-p", "--profile", envvar="AWS_PROFILE")
 @click.option("-r", "--region", envvar="AWS_REGION")
 @click.option("-o", "--output", envvar="ECS_CTL_OUTPUT", default="table")
@@ -82,7 +83,7 @@ def config_set(obj: Dependencies, property: str, value: str):
         console.print(f"Can't set property {property} to value {value}!", Color.RED)
 
 
-@cli.group(short_help="Get ECS cluster resources")
+@cli.group(short_help="Get ECS cluster resources", cls=AliasedGroup)
 @click.pass_obj
 def get(obj: Dependencies):
     config = obj.config
@@ -146,15 +147,16 @@ def get_instances(
 @get.command(name="services")
 @click.argument("service_names", nargs=-1)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.option("--sort-by", required=False, default="name")
 @click.pass_context
-def get_services(ctx: Context, service_names: List[str], cluster: str):
+def get_services(ctx: Context, service_names: List[str], cluster: str, sort_by: str):
     (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
     services = ecs_api.get_services(
         cluster or config.default_cluster, service_names=list(service_names)
     )
 
-    services = sorted(services, key=lambda x: x.name)
+    services = sorted(services, key=lambda x: x.__dict__[sort_by], reverse=True)
 
     if props.get("output", None) == "json":
         console.print(
