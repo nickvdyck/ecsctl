@@ -8,6 +8,7 @@ from ecsctl import console
 from ecsctl.api import EcsApi
 from ecsctl.config import Config
 from ecsctl.serializers import (
+    serialize_container,
     serialize_ecs_cluster,
     serialize_ecs_instance,
     serialize_ecs_service,
@@ -189,14 +190,18 @@ def get_tasks(
 @click.argument("task_name")
 @click.pass_context
 def get_containers(ctx: Context, cluster: str, task_name: str):
-    (config, ecs_api, _, console) = get_dependencies(ctx.obj)
+    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
 
     containers = ecs_api.get_containers(cluster or config.default_cluster, task_name)
-
-    if len(containers) == 0:
-        console.print("No containers found for the given search criteria.")
+    if props.get("output", None) == "json":
+        console.print(
+            json.dumps([serialize_container(container) for container in containers])
+        )
     else:
-        console.table(containers)
+        if len(containers) == 0:
+            console.print("No containers found for the given search criteria.")
+        else:
+            console.table(containers)
 
 
 @get.command(name="definitions")

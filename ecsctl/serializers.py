@@ -1,5 +1,15 @@
 from typing import Dict, Any
-from ecsctl.models import Cluster, Container, Instance, Service, ServiceEvent, Task
+from ecsctl.models import (
+    Cluster,
+    Container,
+    Instance,
+    ManagedAgent,
+    NetworkBinding,
+    NetworkInterface,
+    Service,
+    ServiceEvent,
+    Task,
+)
 
 
 def serialize_ecs_cluster(cluster: Cluster) -> Dict[str, str]:
@@ -90,13 +100,65 @@ def serialize_ecs_service_event(event: ServiceEvent) -> Dict[str, str]:
     }
 
 
-def deserialize_ecs_container(container: Dict[str, Any]) -> Container:
+def deserialize_network_binding(binding: Dict[str, Any]) -> NetworkBinding:
+    return NetworkBinding(
+        binding["bindIP"],
+        binding["containerPort"],
+        binding["hostPort"],
+        binding["protocol"],
+    )
+
+
+def serialize_network_binding(binding: NetworkBinding) -> Dict[str, Any]:
+    return {
+        "bind_ip": binding.bind_ip,
+        "container_port": binding.container_port,
+        "host_port": binding.host_port,
+        "protocol": binding.protocol,
+    }
+
+
+def deserialize_network_interface(interface: Dict[str, Any]) -> NetworkInterface:
+    return NetworkInterface(
+        interface["attachmentId"],
+        interface["privateIpv4Address"],
+        interface.get("ipv6Address", None),
+    )
+
+
+def serialize_network_interface(interface: NetworkInterface) -> Dict[str, Any]:
+    return {
+        "attachment_id": interface.attachment_id,
+        "ipv4_address": interface.ipv4_address,
+        "ipv6_address": interface.ipv6_address,
+    }
+
+
+def deserialize_managed_agent(agent: Dict[str, Any]) -> ManagedAgent:
+    return ManagedAgent(
+        agent["name"],
+        agent["reason"],
+        agent["lastStatus"],
+        agent["lastStartedAt"],
+    )
+
+
+def serialize_managed_agent(agent: ManagedAgent) -> Dict[str, Any]:
+    return {
+        "name": agent.name,
+        "reason": agent.reason,
+        "status": agent.status,
+        "started_at": agent.started_at,
+    }
+
+
+def deserialize_container(container: Dict[str, Any]) -> Container:
     return Container(
         container["containerArn"],
         container["taskArn"],
         container["name"],
         container["image"],
-        container["imageDigest"],
+        container.get("imageDigest", None),
         container["runtimeId"],
         container["lastStatus"],
         container.get("exitCode", None),
@@ -105,7 +167,53 @@ def deserialize_ecs_container(container: Dict[str, Any]) -> Container:
         container["cpu"],
         container.get("memory", None),
         container.get("memoryReservation", None),
+        [
+            deserialize_network_binding(binding)
+            for binding in container.get("networkBindings", [])
+        ],
+        [
+            deserialize_network_interface(interface)
+            for interface in container.get("networkInterfaces", [])
+        ],
+        [
+            deserialize_managed_agent(agent)
+            for agent in container.get("managedAgents", [])
+        ],
+        container.get("gpuIds", []),
     )
+
+
+def serialize_container(container: Container) -> Dict[str, Any]:
+    json = {
+        "id": container.id,
+        "task_arn": container.arn,
+        "name": container.name,
+        "image": container.image,
+        "runtime_id": container.runtime_id,
+        "status": container.status,
+        "exit_code": container.exit_code,
+        "reason": container.reason,
+        "health": container.health,
+        "cpu": container.cpu,
+        "memory": container.memory,
+        "memory_reservation": container.memory_reservation,
+        "network_bindings": [
+            serialize_network_binding(binding) for binding in container.network_bindings
+        ],
+        "network_interfaces": [
+            serialize_network_interface(interface)
+            for interface in container.network_interfaces
+        ],
+        "managed_agents": [
+            serialize_managed_agent(agent) for agent in container.managed_agents
+        ],
+        "gpu_ids": container.gpu_ids,
+    }
+
+    if container.image_digest is not None:
+        json["image_digest"] = container.image_digest
+
+    return json
 
 
 def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
@@ -132,7 +240,7 @@ def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
         task.get("stoppedAt", None),
         task.get("stoppedReason", ""),
         task["tags"],
-        [deserialize_ecs_container(container) for container in task["containers"]],
+        [deserialize_container(container) for container in task["containers"]],
     )
 
 

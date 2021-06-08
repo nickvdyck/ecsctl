@@ -1,10 +1,12 @@
 import boto3
 
 from typing import List, Literal, Optional
-from ecsctl.models import (Cluster, Instance, Service, ServiceEvent, Task,
-                           TaskDefinition)
-from ecsctl.serializers import (deserialize_ecs_instance,
-                                deserialize_ecs_service, deserialize_ecs_task)
+from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task, TaskDefinition
+from ecsctl.serializers import (
+    deserialize_ecs_instance,
+    deserialize_ecs_service,
+    deserialize_ecs_task,
+)
 from ecsctl.utils import chunks
 
 
@@ -214,7 +216,6 @@ class EcsApi:
             cluster=cluster,
             tasks=[task_id_or_arn],
         )
-
         return deserialize_ecs_task(descriptor["tasks"][0])
 
     def get_task_definition(self, definition_family_rev_or_arn: str) -> TaskDefinition:

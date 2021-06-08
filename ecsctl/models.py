@@ -122,6 +122,35 @@ class Service:
         # "networkConfiguration"
 
 
+class NetworkBinding:
+    def __init__(
+        self,
+        bind_ip: str,
+        container_port: int,
+        host_port: int,
+        protocol: Literal["tcp", "udp"],
+    ):
+        self.bind_ip = bind_ip
+        self.container_port = container_port
+        self.host_port = host_port
+        self.protocol = protocol
+
+
+class NetworkInterface:
+    def __init__(self, attachment_id: str, ipv4_address: str, ipv6_address: str):
+        self.attachment_id = attachment_id
+        self.ipv4_address = ipv4_address
+        self.ipv6_address = ipv6_address
+
+
+class ManagedAgent:
+    def __init__(self, name: str, reason: str, status: str, started_at: datetime):
+        self.name = name
+        self.reason = reason
+        self.status = status
+        self.started_at = started_at
+
+
 class Container:
     DEFAULT_COLUMNS = [
         "id",
@@ -148,6 +177,10 @@ class Container:
         cpu: int,
         memory: int,
         memory_reservation: int,
+        network_bindings: List[NetworkBinding],
+        network_interfaces: List[NetworkInterface],
+        managed_agents: List[ManagedAgent],
+        gpu_ids: List[str],
     ):
         self.id = arn.split("/")[-1]
         self.arn = arn
@@ -164,6 +197,10 @@ class Container:
         self.cpu = cpu
         self.memory = memory
         self.memory_reservation = memory_reservation
+        self.network_bindings = network_bindings
+        self.network_interfaces = network_interfaces
+        self.managed_agents = managed_agents
+        self.gpu_ids = gpu_ids
 
 
 class Task:
