@@ -9,6 +9,7 @@ from ecsctl.api import EcsApi
 from ecsctl.config import Config
 from ecsctl.serializers import (
     serialize_container,
+    serialize_deployment,
     serialize_ecs_cluster,
     serialize_ecs_instance,
     serialize_ecs_service,
@@ -184,7 +185,30 @@ def get_events(ctx: Context, service_name: str, cluster: str):
             json.dumps([serialize_ecs_service_event(event) for event in events])
         )
     else:
+        if len(events) > 0:
         console.table(events)
+        else:
+            console.print(f"No events found for service '{service_name}'.")
+
+
+@get.command(name="deployments")
+@click.argument("service_name", nargs=1, required=True)
+@click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.pass_context
+def get_deployments(ctx: Context, service_name: str, cluster: str) -> None:
+    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+
+    services = ecs_api.get_services(cluster, service_names=[service_name])
+    deployments = services[0].deployments
+
+    deployments = sorted(deployments, key=lambda x: x.created_at, reverse=True)
+
+    if props.get("output", None) == "json":
+        console.print(
+            json.dumps([serialize_deployment(deployment) for deployment in deployments])
+        )
+    else:
+        console.table(deployments)
 
 
 @get.command(name="tasks")
@@ -243,7 +267,7 @@ def get_containers(ctx: Context, cluster: str, task_name: str):
 @get.command(name="definitions")
 @click.argument("definition_family_rev_or_arn")
 @click.pass_context
-def get_containers(ctx: Context, definition_family_rev_or_arn: str):
+def get_definitions(ctx: Context, definition_family_rev_or_arn: str):
     (_, ecs_api, _, console) = get_dependencies(ctx.obj)
 
     definition = ecs_api.get_task_definition(
@@ -265,12 +289,18 @@ def get_containers(ctx: Context, definition_family_rev_or_arn: str):
 @click.option("--ec2", is_flag=True, default=False)
 @click.pass_context
 def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
+    config = ctx.obj.config
+    profile = ctx.obj.props.get("profile")
+    region = ctx.obj.props.get("region")
+    # TODO: bail out when profile is None
+    ecs_api = EcsApi(profile or config.profile, region)
+
     if not ec2:
         raise Exception(
             "Only executing into an ec2 instance supported at the moment. Please add --ec2 to jump into a shell in the ec2 instance a service or task is running on."
         )
 
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+    (config, _, props, console) = get_dependencies(ctx.obj)
 
     if not config.meets_ssm_prereqs:
         console.print(

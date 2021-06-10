@@ -1,10 +1,10 @@
 import boto3
 
-from typing import List, Literal, Optional
-from ecsctl.models import Cluster, Instance, Service, ServiceEvent, Task, TaskDefinition
+from typing import Any, List, Literal, Optional
+from ecsctl.models import Cluster, Instance, Service, Event, Task, TaskDefinition
 from ecsctl.serializers import (
     deserialize_ecs_instance,
-    deserialize_ecs_service,
+    deserialize_service,
     deserialize_ecs_task,
 )
 from ecsctl.utils import chunks
@@ -138,20 +138,22 @@ class EcsApi:
             )
 
             services = services + [
-                deserialize_ecs_service(service) for service in descriptor["services"]
+                deserialize_service(service) for service in descriptor["services"]
             ]
 
         return services
 
-    def get_events_for_service(
-        self, cluster: str, service_name: str
-    ) -> List[ServiceEvent]:
+    def get_events_for_service(self, cluster: str, service_name: str) -> List[Event]:
         descriptor = self.client.describe_services(
             cluster=cluster, services=[service_name]
         )
+        services: List[Any] = descriptor["services"]
+        service = None
 
-        service = deserialize_ecs_service(descriptor["services"][0])
-        return service.events
+        if len(services) > 0:
+            service = deserialize_service(descriptor["services"][0])
+
+        return service.events if service is not None else []
 
     def get_tasks(
         self,
