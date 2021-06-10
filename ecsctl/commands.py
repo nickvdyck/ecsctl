@@ -41,8 +41,9 @@ def get_dependencies(
 @click.option("-p", "--profile", envvar="AWS_PROFILE")
 @click.option("-r", "--region", envvar="AWS_REGION")
 @click.option("-o", "--output", envvar="ECS_CTL_OUTPUT", default="table")
+@click.option("--debug", is_flag=True, default=False)
 @click.pass_context
-def cli(ctx: Context, profile: str, region: str, output: str):
+def cli(ctx: Context, profile: str, region: str, output: str, debug: bool):
     config = Config()
     console = Console()
     ctx.obj = Dependencies(

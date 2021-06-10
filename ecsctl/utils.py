@@ -1,5 +1,6 @@
 import click
 import typing
+import traceback
 
 from click.core import Context
 from ecsctl.config import Config
@@ -22,8 +23,8 @@ class ExceptionFormattedGroup(click.Group):
         try:
             return self.main(*args, **kwargs)
         except Exception as ex:
-            if "--debug" in self.__called_with_params:
-                click.echo(ex)
+            if self.__called_with_params.get("debug", False) == True:
+                traceback.print_exc()
             else:
                 message = click.style(ex, fg="red")
                 click.echo(message=message, err=True)
