@@ -251,7 +251,7 @@ def deserialize_ecs_service_event(event: Dict[str, str]) -> Event:
 def serialize_ecs_service_event(event: Event) -> Dict[str, str]:
     return {
         "id": event.id,
-        "created_at": event.created_at,
+        "created_at": event.created_at.isoformat(),
         "message": event.message,
     }
 
@@ -304,7 +304,7 @@ def serialize_managed_agent(agent: ManagedAgent) -> Dict[str, Any]:
         "name": agent.name,
         "reason": agent.reason,
         "status": agent.status,
-        "started_at": agent.started_at,
+        "started_at": agent.started_at.isoformat(),
     }
 
 
