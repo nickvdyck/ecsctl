@@ -2,9 +2,9 @@ import click
 import json
 import os
 import subprocess
+import functools
 
 from click import Context
-from ecsctl import console
 from ecsctl.api import EcsApi
 from ecsctl.config import Config
 from ecsctl.serializers import (
@@ -18,39 +18,53 @@ from ecsctl.serializers import (
 )
 from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
 from ecsctl.console import Color, Console
-from typing import List, Tuple, Dict, Optional
+from typing import Any, List, Tuple, TypedDict, Optional
 
 
-class Dependencies:
-    def __init__(
-        self, config: Config, ecs_api: EcsApi, props: Dict[str, str], console: Console
-    ):
-        self.config = config
-        self.ecs_api = ecs_api
+class ContainerProps(TypedDict):
+    profile: Optional[str]
+    region: Optional[str]
+    debug: bool
+
+
+class ServiceProvider:
+    def __init__(self, props: ContainerProps):
         self.props = props
-        self.console = console
+        self.config = Config()
+        self.console = Console()
+
+    @functools.cached_property
+    def ecs_api(
+        self,
+    ) -> EcsApi:
+        return EcsApi(profile=self.props["profile"], region=self.props["region"])
+
+    def resolve(self) -> Tuple[Config, Console]:
+        return (self.config, self.console)
+
+    def resolve_all(self) -> Tuple[Config, Console, EcsApi]:
+        return (self.config, self.console, self.ecs_api)
 
 
-def get_dependencies(
-    dep: Dependencies,
-) -> Tuple[Config, EcsApi, Dict[str, str], Console]:
-    return (dep.config, dep.ecs_api, dep.props, dep.console)
+def output_option(function: Any) -> Any:
+    function = click.option("-o", "--output", envvar="ECS_CTL_OUTPUT", default="table")(
+        function
+    )
+    return function
 
 
 @click.group(cls=ExceptionFormattedGroup)
 @click.option("-p", "--profile", envvar="AWS_PROFILE")
 @click.option("-r", "--region", envvar="AWS_REGION")
-@click.option("-o", "--output", envvar="ECS_CTL_OUTPUT", default="table")
 @click.option("--debug", is_flag=True, default=False)
 @click.pass_context
-def cli(ctx: Context, profile: str, region: str, output: str, debug: bool):
-    config = Config()
-    console = Console()
-    ctx.obj = Dependencies(
-        config,
-        None,
-        {"profile": profile, "output": output, "region": region},
-        console,
+def cli(ctx: Context, profile: str, region: str, debug: bool):
+    ctx.obj = ServiceProvider(
+        props={
+            "profile": profile,
+            "region": region,
+            "debug": debug,
+        }
     )
 
 
@@ -61,19 +75,17 @@ def config():
 
 @config.command(name="view")
 @click.pass_obj
-def config_view(obj: Dependencies):
-    config = obj.config
-    console = obj.console
+def config_view(obj: ServiceProvider):
+    (config, console) = obj.resolve()
     console.print(json.dumps(config.to_json(), indent=4, sort_keys=True))
 
 
 @config.command(name="set")
-@click.pass_obj
 @click.argument("property", required=True)
 @click.argument("value", required=True)
-def config_set(obj: Dependencies, property: str, value: str):
-    config = obj.config
-    console = obj.console
+@click.pass_obj
+def config_set(obj: ServiceProvider, property: str, value: str):
+    (config, console) = obj.resolve()
 
     if property == "profile":
         config.set_profile(value)
@@ -86,27 +98,22 @@ def config_set(obj: Dependencies, property: str, value: str):
 
 
 @cli.group(short_help="Get ECS cluster resources", cls=AliasedGroup)
-@click.pass_obj
-def get(obj: Dependencies):
-    config = obj.config
-    profile = obj.props.get("profile")
-    region = obj.props.get("region")
-    # TODO: bail out when profile is None
-    ecs_api = EcsApi(profile or config.profile, region)
-    obj.ecs_api = ecs_api
+def get():
+    pass
 
 
 @get.command(name="clusters")
 @click.argument("cluster_names", nargs=-1)
-@click.pass_context
-def get_clusters(ctx: Context, cluster_names: List[str]):
-    (_, ecs_api, props, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_clusters(obj: ServiceProvider, cluster_names: List[str], output: str):
+    (_, console, ecs_api) = obj.resolve_all()
 
     clusters = ecs_api.get_clusters(cluster_names=list(cluster_names))
 
     clusters = sorted(clusters, key=lambda x: x.name)
 
-    if props.get("output", None) == "json":
+    if output == "json":
         cluster_json = json.dumps(
             [serialize_ecs_cluster(cluster) for cluster in clusters]
         )
@@ -120,15 +127,17 @@ def get_clusters(ctx: Context, cluster_names: List[str]):
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("--status", default=None)
 @click.option("--sort-by", required=False, default="registered_at")
-@click.pass_context
+@output_option
+@click.pass_obj
 def get_instances(
-    ctx: Context,
+    obj: ServiceProvider,
     cluster: str,
     instance_names: Optional[List[str]],
     sort_by: Optional[str],
     status: Optional[str],  # TODO: make this a literal
+    output: str,
 ):
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+    (config, console, ecs_api) = obj.resolve_all()
 
     instances = ecs_api.get_instances(
         cluster or config.default_cluster,
@@ -138,7 +147,7 @@ def get_instances(
 
     instances = sorted(instances, key=lambda x: x.__dict__[sort_by], reverse=True)
 
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(
             json.dumps([serialize_ecs_instance(instance) for instance in instances])
         )
@@ -150,9 +159,16 @@ def get_instances(
 @click.argument("service_names", nargs=-1)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("--sort-by", required=False, default="name")
-@click.pass_context
-def get_services(ctx: Context, service_names: List[str], cluster: str, sort_by: str):
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_services(
+    obj: ServiceProvider,
+    service_names: List[str],
+    cluster: str,
+    sort_by: str,
+    output: str,
+):
+    (config, console, ecs_api) = obj.resolve_all()
 
     services = ecs_api.get_services(
         cluster or config.default_cluster, service_names=list(service_names)
@@ -160,7 +176,7 @@ def get_services(ctx: Context, service_names: List[str], cluster: str, sort_by: 
 
     services = sorted(services, key=lambda x: x.__dict__[sort_by], reverse=True)
 
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(
             json.dumps([serialize_ecs_service(service) for service in services])
         )
@@ -171,9 +187,10 @@ def get_services(ctx: Context, service_names: List[str], cluster: str, sort_by: 
 @get.command(name="events")
 @click.argument("service_name", nargs=1, required=True)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
-@click.pass_context
-def get_events(ctx: Context, service_name: str, cluster: str):
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_events(obj: ServiceProvider, service_name: str, cluster: str, output: str):
+    (config, console, ecs_api) = obj.resolve_all()
 
     events = ecs_api.get_events_for_service(
         cluster or config.default_cluster, service_name=service_name
@@ -181,13 +198,13 @@ def get_events(ctx: Context, service_name: str, cluster: str):
 
     events = sorted(events, key=lambda x: x.created_at, reverse=True)
 
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(
             json.dumps([serialize_ecs_service_event(event) for event in events])
         )
     else:
         if len(events) > 0:
-        console.table(events)
+            console.table(events)
         else:
             console.print(f"No events found for service '{service_name}'.")
 
@@ -195,16 +212,19 @@ def get_events(ctx: Context, service_name: str, cluster: str):
 @get.command(name="deployments")
 @click.argument("service_name", nargs=1, required=True)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
-@click.pass_context
-def get_deployments(ctx: Context, service_name: str, cluster: str) -> None:
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_deployments(
+    obj: ServiceProvider, service_name: str, cluster: str, output: str
+) -> None:
+    (_, console, ecs_api) = obj.resolve_all()
 
     services = ecs_api.get_services(cluster, service_names=[service_name])
     deployments = services[0].deployments
 
     deployments = sorted(deployments, key=lambda x: x.created_at, reverse=True)
 
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(
             json.dumps([serialize_deployment(deployment) for deployment in deployments])
         )
@@ -218,16 +238,18 @@ def get_deployments(ctx: Context, service_name: str, cluster: str) -> None:
 @click.option("-s", "--service", required=False)
 @click.option("-i", "--instance", required=False)
 @click.option("--status", default="RUNNING")
-@click.pass_context
+@output_option
+@click.pass_obj
 def get_tasks(
-    ctx: Context,
+    obj: ServiceProvider,
     cluster: str,
     task_names: Optional[List[str]],
     instance: Optional[str],
     service: Optional[str],
     status: Optional[str],
+    output: str,
 ):
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+    (config, console, ecs_api) = obj.resolve_all()
 
     tasks = ecs_api.get_tasks(
         cluster or config.default_cluster,
@@ -237,7 +259,7 @@ def get_tasks(
         status=status,
     )
 
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(json.dumps([serialize_ecs_task(task) for task in tasks]))
     else:
         if len(tasks) > 0:
@@ -249,12 +271,13 @@ def get_tasks(
 @get.command(name="containers")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.argument("task_name")
-@click.pass_context
-def get_containers(ctx: Context, cluster: str, task_name: str):
-    (config, ecs_api, props, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_containers(obj: ServiceProvider, cluster: str, task_name: str, output: str):
+    (config, console, ecs_api) = obj.resolve_all()
 
     containers = ecs_api.get_containers(cluster or config.default_cluster, task_name)
-    if props.get("output", None) == "json":
+    if output == "json":
         console.print(
             json.dumps([serialize_container(container) for container in containers])
         )
@@ -267,9 +290,12 @@ def get_containers(ctx: Context, cluster: str, task_name: str):
 
 @get.command(name="definitions")
 @click.argument("definition_family_rev_or_arn")
-@click.pass_context
-def get_definitions(ctx: Context, definition_family_rev_or_arn: str):
-    (_, ecs_api, _, console) = get_dependencies(ctx.obj)
+@output_option
+@click.pass_obj
+def get_definitions(
+    obj: ServiceProvider, definition_family_rev_or_arn: str, output: str
+):
+    (_, console, ecs_api) = obj.resolve_all()
 
     definition = ecs_api.get_task_definition(
         definition_family_rev_or_arn=definition_family_rev_or_arn
@@ -288,20 +314,17 @@ def get_definitions(ctx: Context, definition_family_rev_or_arn: str):
 @click.option("-t", "--task", required=False)
 @click.option("-s", "--service", required=False)
 @click.option("--ec2", is_flag=True, default=False)
-@click.pass_context
-def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
-    config = ctx.obj.config
-    profile = ctx.obj.props.get("profile")
-    region = ctx.obj.props.get("region")
-    # TODO: bail out when profile is None
-    ecs_api = EcsApi(profile or config.profile, region)
+@click.pass_obj
+def exec(obj: ServiceProvider, cluster: str, task: str, service: str, ec2: bool):
+    profile = obj.props.get("profile")
+    region = obj.props.get("region")
 
     if not ec2:
         raise Exception(
             "Only executing into an ec2 instance supported at the moment. Please add --ec2 to jump into a shell in the ec2 instance a service or task is running on."
         )
 
-    (config, _, props, console) = get_dependencies(ctx.obj)
+    (config, console, ecs_api) = obj.resolve_all()
 
     if not config.meets_ssm_prereqs:
         console.print(
@@ -339,13 +362,15 @@ def exec(ctx: Context, cluster: str, task: str, service: str, ec2: bool):
 
     ec2_instance = constainer_instances[0].ec2_instance
 
-    if props.get("profile", None) is None:
+    if profile is None:
         cmd = ["aws", "ssm", "start-session", "--target", ec2_instance]
     else:
         cmd = [
             "aws",
             "--profile",
-            props.get("profile"),
+            profile,
+            "--region",
+            "us-east-1",
             "ssm",
             "start-session",
             "--target",
