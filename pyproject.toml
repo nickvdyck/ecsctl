@@ -6,6 +6,7 @@ authors = ["Nick Van Dyck <vandyck.nick@outlook.com>"]
 
 [tool.poetry.scripts]
 ecsctl = "ecsctl.__main__:main"
+aws-ecsctl = "ecsctl.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -16,6 +17,7 @@ tabulate = "^0.8.9"
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 black = "^21.5b2"
+pyinstaller = "^4.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
