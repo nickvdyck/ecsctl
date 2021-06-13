@@ -2,9 +2,10 @@ import click
 import typing
 import traceback
 
-from click.core import Context
+
+from click.core import Command, Context
 from ecsctl.config import Config
-from typing import List, Any
+from typing import Any, Dict, List, Optional
 
 
 # stolen from: https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
@@ -12,6 +13,10 @@ def chunks(items: List[Any], n: int):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(items), n):
         yield items[i : i + n]
+
+
+def filter_empty_values(json_dict: Dict[str, Optional[Any]]) -> Dict[str, Any]:
+    return {k: v for k, v in json_dict.items() if v is not None}
 
 
 class ExceptionFormattedGroup(click.Group):
@@ -31,7 +36,7 @@ class ExceptionFormattedGroup(click.Group):
 
 
 class AliasedGroup(click.Group):
-    def get_command(self, ctx: Context, cmd_name: str):
+    def get_command(self, ctx: Context, cmd_name: str) -> Optional[Command]:
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
             return rv

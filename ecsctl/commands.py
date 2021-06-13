@@ -1,3 +1,4 @@
+import boto3
 import click
 import json
 import os
@@ -10,11 +11,12 @@ from ecsctl.config import Config
 from ecsctl.serializers import (
     serialize_container,
     serialize_deployment,
-    serialize_ecs_cluster,
+    serialize_cluster,
     serialize_ecs_instance,
     serialize_ecs_service,
     serialize_ecs_service_event,
     serialize_ecs_task,
+    serialize_task_definition,
 )
 from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
 from ecsctl.console import Color, Console
@@ -114,9 +116,7 @@ def get_clusters(obj: ServiceProvider, cluster_names: List[str], output: str):
     clusters = sorted(clusters, key=lambda x: x.name)
 
     if output == "json":
-        cluster_json = json.dumps(
-            [serialize_ecs_cluster(cluster) for cluster in clusters]
-        )
+        cluster_json = json.dumps([serialize_cluster(cluster) for cluster in clusters])
         console.print(cluster_json)
     else:
         console.table(clusters)
@@ -301,29 +301,31 @@ def get_definitions(
         definition_family_rev_or_arn=definition_family_rev_or_arn
     )
 
-    definition["registeredAt"] = definition["registeredAt"].isoformat()
-
-    if definition.get("deregisteredAt", None) is not None:
-        definition["deregisteredAt"] = definition["deregisteredAt"].isoformat()
-
-    console.print(json.dumps(definition))
+    if output == "json":
+        console.print(json.dumps(serialize_task_definition(definition)))
+    else:
+        console.table([definition])
 
 
 @cli.command(short_help="Execute commands inside an ECS cluster")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", required=False)
 @click.option("-s", "--service", required=False)
+@click.option("--container", required=False)
+@click.option("--command", required=False)
 @click.option("--ec2", is_flag=True, default=False)
 @click.pass_obj
-def exec(obj: ServiceProvider, cluster: str, task: str, service: str, ec2: bool):
+def exec(
+    obj: ServiceProvider,
+    cluster: str,
+    service: Optional[str],
+    task: Optional[str],
+    container: Optional[str],
+    command: Optional[str],
+    ec2: bool,
+):
     profile = obj.props.get("profile")
     region = obj.props.get("region")
-
-    if not ec2:
-        raise Exception(
-            "Only executing into an ec2 instance supported at the moment. Please add --ec2 to jump into a shell in the ec2 instance a service or task is running on."
-        )
-
     (config, console, ecs_api) = obj.resolve_all()
 
     if not config.meets_ssm_prereqs:
@@ -354,27 +356,72 @@ def exec(obj: ServiceProvider, cluster: str, task: str, service: str, ec2: bool)
         else:
             return
 
-    task = ecs_api.get_task_by_id_or_arn(cluster or config.default_cluster, task)
+    selected_cluster = cluster or config.default_cluster
 
-    constainer_instances = ecs_api.get_instances(
-        cluster or config.default_cluster, [task.container_instance_id]
-    )
+    if task is None and service is None:
+        raise Exception("Error: service or task must be specified")
 
-    ec2_instance = constainer_instances[0].ec2_instance
+    if task is None and service is not None:
+        tasks = ecs_api.get_tasks(cluster=selected_cluster, service=service)
+        _, index = console.choose("Choose a task:", [task.arn for task in tasks])
+        selected_task = tasks[index]
 
-    if profile is None:
-        cmd = ["aws", "ssm", "start-session", "--target", ec2_instance]
     else:
-        cmd = [
-            "aws",
-            "--profile",
-            profile,
-            "--region",
-            "us-east-1",
+        selected_task = ecs_api.get_task_by_id_or_arn(
+            cluster or config.default_cluster, task
+        )
+
+    if ec2:
+        constainer_instances = ecs_api.get_instances(
+            cluster or config.default_cluster, [selected_task.container_instance_id]
+        )
+
+        ec2_instance = constainer_instances[0].ec2_instance
+
+        cmd = ["aws"]
+
+        if profile is not None:
+            cmd = cmd + ["--profile", profile]
+
+        if region is not None:
+            cmd = cmd + ["--region", region]
+
+        cmd = cmd + [
             "ssm",
             "start-session",
             "--target",
             ec2_instance,
+        ]
+    else:
+        if container is None:
+            _, index = console.choose(
+                "Choose a container:",
+                [container.name for container in selected_task.containers],
+            )
+            selected_container = selected_task.containers[index].name
+        else:
+            selected_container = container
+
+        cmd = ["aws"]
+
+        if profile is not None:
+            cmd = cmd + ["--profile", profile]
+
+        if region is not None:
+            cmd = cmd + ["--region", region]
+
+        cmd = cmd + [
+            "ecs",
+            "execute-command",
+            "--cluster",
+            selected_cluster,
+            "--task",
+            selected_task.arn,
+            "--container",
+            selected_container,
+            "--interactive",
+            "--command",
+            command or "/bin/sh",
         ]
 
     env = os.environ.copy()
@@ -387,3 +434,29 @@ def exec(obj: ServiceProvider, cluster: str, task: str, service: str, ec2: bool)
             break
         except KeyboardInterrupt as _:
             pass
+
+
+@cli.command(short_help="Execute commands inside an ECS cluster")
+@click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.option("-t", "--task", "task_name", required=False)
+@click.option("--container", "container_name", required=False)
+@click.pass_obj
+def logs(
+    obj: ServiceProvider,
+    cluster: str,
+    task_name: Optional[str],
+    container_name: Optional[str],
+):
+    (_, _, ecs_api) = obj.resolve_all()
+    task = ecs_api.get_task_by_id_or_arn(
+        cluster=cluster or obj.config.default_cluster, task_id_or_arn=task_name
+    )
+
+    definition = ecs_api.get_task_definition(
+        definition_family_rev_or_arn=task.task_definition_arn
+    )
+
+    client = boto3.client("logs")
+    paginator = client.get_paginator("filter_log_events")
+
+    # paginator.

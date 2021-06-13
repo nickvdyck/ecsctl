@@ -6,6 +6,8 @@ from ecsctl.serializers import (
     deserialize_ecs_instance,
     deserialize_service,
     deserialize_ecs_task,
+    deserialize_cluster,
+    deserialize_task_definition,
 )
 from ecsctl.utils import chunks
 
@@ -26,18 +28,7 @@ class EcsApi:
             else self.client.list_clusters()["clusterArns"]
         )
         descriptors = self.client.describe_clusters(clusters=cluster_arns)
-
-        clusters = [
-            Cluster(
-                cluster["clusterName"],
-                cluster["status"],
-                cluster["registeredContainerInstancesCount"],
-                cluster["activeServicesCount"],
-                cluster["runningTasksCount"],
-                cluster["pendingTasksCount"],
-            )
-            for cluster in descriptors["clusters"]
-        ]
+        clusters = [deserialize_cluster(cluster) for cluster in descriptors["clusters"]]
 
         return clusters
 
@@ -188,7 +179,7 @@ class EcsApi:
                 else task_arns
             )
 
-        if len(task_names_or_arns) == 0:
+        if len(task_names_or_arns or []) == 0:
             task_arns = (
                 list_all_task_arns(desired_status=status.upper())
                 if status.upper() != "ALL"
@@ -206,6 +197,10 @@ class EcsApi:
                 tasks=tasks_chunk,
             )
 
+            import pdb
+
+            pdb.set_trace()
+
             tasks = tasks + [deserialize_ecs_task(task) for task in descriptor["tasks"]]
         return tasks
 
@@ -218,10 +213,13 @@ class EcsApi:
             cluster=cluster,
             tasks=[task_id_or_arn],
         )
+        import pdb
+
+        pdb.set_trace()
         return deserialize_ecs_task(descriptor["tasks"][0])
 
     def get_task_definition(self, definition_family_rev_or_arn: str) -> TaskDefinition:
         descriptor = self.client.describe_task_definition(
             taskDefinition=definition_family_rev_or_arn
         )
-        return descriptor["taskDefinition"]
+        return deserialize_task_definition(descriptor["taskDefinition"])

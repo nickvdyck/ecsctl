@@ -1,32 +1,9 @@
 from typing import Dict, List, Literal, Optional, TypedDict, Union
 from datetime import datetime
+from ecsctl.models.common import PlacementConstraint
 
-
-class Cluster:
-    DEFAULT_COLUMNS = [
-        "name",
-        "status",
-        "instances",
-        "services",
-        "running_tasks",
-        "pending_tasks",
-    ]
-
-    def __init__(
-        self,
-        name: str,
-        status: str,
-        instances: int,
-        services: int,
-        running_tasks: int,
-        pending_tasks: int,
-    ):
-        self.name = name
-        self.status = status
-        self.instances = instances
-        self.services = services
-        self.running_tasks = running_tasks
-        self.pending_tasks = pending_tasks
+from ecsctl.models.task_definition import *
+from ecsctl.models.cluster import *
 
 
 class Instance:
@@ -168,11 +145,6 @@ class DeploymentController(TypedDict):
     type: Literal["ECS", "CODE_DEPLOY", "EXTERNAL"]
 
 
-class PlacementConstraints(TypedDict):
-    type: Optional[str]
-    expression: Optional[str]
-
-
 class PlacementStrategy(TypedDict):
     type: Optional[str]
     field: Optional[str]
@@ -206,7 +178,7 @@ class Service:
         events: List[Event],
         enable_ecs_managed_tags: bool,
         enable_execute_command: bool,
-        placement_constraints: List[PlacementConstraints],
+        placement_constraints: List[PlacementConstraint],
         placement_strategy: List[PlacementStrategy],
         deployments: List[Deployment],
         load_balancers: List[LoadBalancer],
@@ -400,7 +372,3 @@ class Task:
             self.container_instance_arn = container_instance_arn
 
         self.containers = containers
-
-
-class TaskDefinition:
-    pass

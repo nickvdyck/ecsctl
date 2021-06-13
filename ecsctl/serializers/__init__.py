@@ -1,7 +1,6 @@
 from typing import Dict, Any
 from ecsctl.models import (
     AwsVpcConfiguration,
-    Cluster,
     Container,
     Deployment,
     DeploymentConfiguration,
@@ -15,17 +14,8 @@ from ecsctl.models import (
     Event,
     Task,
 )
-
-
-def serialize_ecs_cluster(cluster: Cluster) -> Dict[str, str]:
-    return {
-        "name": cluster.name,
-        "status": cluster.status,
-        "instances": cluster.status,
-        "services": cluster.services,
-        "running_tasks": cluster.running_tasks,
-        "pending_tasks": cluster.pending_tasks,
-    }
+from ecsctl.serializers.serialize_cluster import *
+from ecsctl.serializers.serialize_task_definition import *
 
 
 def deserialize_ecs_instance(instance: Dict[str, Any]) -> Instance:

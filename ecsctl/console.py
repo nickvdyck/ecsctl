@@ -1,6 +1,7 @@
 from datetime import datetime
 from tabulate import tabulate
 from typing import Any, List, Optional
+from pick import pick
 
 
 def render_column(item: Any) -> str:
@@ -53,3 +54,6 @@ class Console:
                 stralign="left",
             )
         )
+
+    def choose(self, title: str, options: List[str]) -> str:
+        return pick(options, title)
