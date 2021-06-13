@@ -12,9 +12,9 @@ from ecsctl.serializers import (
     serialize_container,
     serialize_deployment,
     serialize_cluster,
-    serialize_ecs_instance,
-    serialize_ecs_service,
-    serialize_ecs_service_event,
+    serialize_instance,
+    serialize_service,
+    serialize_service_event,
     serialize_ecs_task,
     serialize_task_definition,
 )
@@ -149,7 +149,7 @@ def get_instances(
 
     if output == "json":
         console.print(
-            json.dumps([serialize_ecs_instance(instance) for instance in instances])
+            json.dumps([serialize_instance(instance) for instance in instances])
         )
     else:
         console.table(instances)
@@ -177,9 +177,7 @@ def get_services(
     services = sorted(services, key=lambda x: x.__dict__[sort_by], reverse=True)
 
     if output == "json":
-        console.print(
-            json.dumps([serialize_ecs_service(service) for service in services])
-        )
+        console.print(json.dumps([serialize_service(service) for service in services]))
     else:
         console.table(services)
 
@@ -199,9 +197,7 @@ def get_events(obj: ServiceProvider, service_name: str, cluster: str, output: st
     events = sorted(events, key=lambda x: x.created_at, reverse=True)
 
     if output == "json":
-        console.print(
-            json.dumps([serialize_ecs_service_event(event) for event in events])
-        )
+        console.print(json.dumps([serialize_service_event(event) for event in events]))
     else:
         if len(events) > 0:
             console.table(events)
@@ -458,5 +454,3 @@ def logs(
 
     client = boto3.client("logs")
     paginator = client.get_paginator("filter_log_events")
-
-    # paginator.

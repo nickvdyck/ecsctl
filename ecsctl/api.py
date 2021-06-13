@@ -3,7 +3,7 @@ import boto3
 from typing import Any, List, Literal, Optional
 from ecsctl.models import Cluster, Instance, Service, Event, Task, TaskDefinition
 from ecsctl.serializers import (
-    deserialize_ecs_instance,
+    deserialize_instance,
     deserialize_service,
     deserialize_ecs_task,
     deserialize_cluster,
@@ -96,7 +96,7 @@ class EcsApi:
             )
 
             instances = instances + [
-                deserialize_ecs_instance(instance)
+                deserialize_instance(instance)
                 for instance in descriptor["containerInstances"]
             ]
 
@@ -197,10 +197,6 @@ class EcsApi:
                 tasks=tasks_chunk,
             )
 
-            import pdb
-
-            pdb.set_trace()
-
             tasks = tasks + [deserialize_ecs_task(task) for task in descriptor["tasks"]]
         return tasks
 
@@ -213,9 +209,7 @@ class EcsApi:
             cluster=cluster,
             tasks=[task_id_or_arn],
         )
-        import pdb
 
-        pdb.set_trace()
         return deserialize_ecs_task(descriptor["tasks"][0])
 
     def get_task_definition(self, definition_family_rev_or_arn: str) -> TaskDefinition:
