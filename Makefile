@@ -8,8 +8,12 @@ setup:
 	poetry install
 
 .PHONY: check
-check:
+check: types
 	poetry run black --check .
+
+.PHONY: types
+types:
+	poetry run mypy ecsctl
 
 .PHONY: fromat
 format:
