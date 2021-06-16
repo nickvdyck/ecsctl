@@ -22,7 +22,7 @@ class NetworkInterface:
 
 @dataclass(frozen=True)
 class ManagedAgent:
-    __slots__ = ["name", "reason", "status", "started_at"]
+    __slots__ = ("name", "reason", "status", "started_at")
     name: str
     reason: str
     status: str
