@@ -3,7 +3,7 @@ import functools
 from boto3.session import Session
 from ecsctl.services.ecs import EcsService
 from ecsctl.services.logs import AWSLogs
-from ecsctl.services.console import Console, Color
+from ecsctl.services.console import Console
 from ecsctl.services.config import Config
 
 from typing import Optional, Tuple, TypedDict

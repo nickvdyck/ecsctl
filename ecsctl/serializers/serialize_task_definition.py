@@ -1,15 +1,14 @@
 from ecsctl.utils import filter_empty_values
-from ecsctl.models.task_definition import (
+from ecsctl.models import (
     ContainerDefinition,
     HealthCheck,
     LogConfiguration,
     MountPoint,
     Secret,
     VolumeFrom,
+    TaskDefinition,
 )
 from typing import Any, Dict, Optional
-
-from ecsctl.models import ContainerDefinition, TaskDefinition
 
 
 def deserialize_secret(secret: Dict[str, Any]) -> Secret:

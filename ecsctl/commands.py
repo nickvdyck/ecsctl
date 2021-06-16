@@ -1,4 +1,3 @@
-import boto3
 import click
 import json
 import os
@@ -401,7 +400,7 @@ def exec(
         try:
             shell.wait()
             break
-        except KeyboardInterrupt as _:
+        except KeyboardInterrupt:
             pass
 
 

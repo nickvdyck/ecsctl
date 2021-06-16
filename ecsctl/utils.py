@@ -28,7 +28,7 @@ class ExceptionFormattedGroup(click.Group):
         try:
             return self.main(*args, **kwargs)
         except Exception as ex:
-            if self.__called_with_params.get("debug", False) == True:
+            if self.__called_with_params.get("debug", False) is True:
                 traceback.print_exc()
             else:
                 message = click.style(ex, fg="red")
