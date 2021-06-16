@@ -61,9 +61,13 @@ def serialize_managed_agent(agent: ManagedAgent) -> Dict[str, Any]:
 
 
 def deserialize_container(container: Dict[str, Any]) -> Container:
+    container_arn = container.get("containerArn", "")
+    task_arn = container.get("taskArn", "")
     return Container(
-        container["containerArn"],
-        container["taskArn"],
+        container_arn.split("/")[-1],
+        container_arn,
+        task_arn.split("/")[-1],
+        task_arn,
         container["name"],
         container["image"],
         container.get("imageDigest", None),
@@ -124,12 +128,27 @@ def serialize_container(container: Container) -> Dict[str, Any]:
     return json
 
 
-def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
+def deserialize_task(task: Dict[str, Any]) -> Task:
+    arn = task.get("taskArn", "")
+    task_definition_arn = task.get("taskDefinitionArn", "")
+    launch_type = task.get("launchType", None)
+    container_instance_arn = task.get("containerInstanceArn", "")
+
+    if launch_type == "EC2":
+        container_instance_id = container_instance_arn.split("/")[-1]
+        container_instance_arn = container_instance_arn
+    else:
+        container_instance_id = None
+        container_instance_arn = None
+
     return Task(
-        task["taskArn"],
-        task["taskDefinitionArn"],
+        arn.split("/")[-1],
+        arn,
+        task_definition_arn.split("/")[-1],
+        task_definition_arn,
         task["clusterArn"],
-        task.get("containerInstanceArn", ""),
+        container_instance_id,
+        container_instance_arn,
         task["availabilityZone"],
         task.get("connectivity", None),
         task.get("connectivityAt", None),
@@ -152,7 +171,7 @@ def deserialize_ecs_task(task: Dict[str, Any]) -> Task:
     )
 
 
-def serialize_ecs_task(task: Task) -> Dict[str, str]:
+def serialize_task(task: Task) -> Dict[str, str]:
     task_json = {
         "id": task.id,
         "arn": task.arn,
@@ -166,7 +185,7 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
         "status": task.status,
         "desired_status": task.desired_status,
         "health": task.health,
-        "type": task.type,
+        "launch_type": task.launch_type,
         "cpu": task.cpu,
         "memory": task.memory,
         "group": task.group,
@@ -178,7 +197,7 @@ def serialize_ecs_task(task: Task) -> Dict[str, str]:
         "tags": task.tags,
     }
 
-    if task.type == "ECS":
+    if task.launch_type == "ECS":
         task_json["container_instance_id"] = task.container_instance_id
         task_json["container_instance_arn"] = task.container_instance_arn
 

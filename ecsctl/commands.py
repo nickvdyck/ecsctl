@@ -14,7 +14,7 @@ from ecsctl.serializers import (
     serialize_instance,
     serialize_service,
     serialize_service_event,
-    serialize_ecs_task,
+    serialize_task,
     serialize_task_definition,
 )
 from typing import Any, List, Optional
@@ -228,7 +228,7 @@ def get_tasks(
     )
 
     if output == "json":
-        console.print(json.dumps([serialize_ecs_task(task) for task in tasks]))
+        console.print(json.dumps([serialize_task(task) for task in tasks]))
     else:
         if len(tasks) > 0:
             console.table(tasks)

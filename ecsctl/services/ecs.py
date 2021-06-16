@@ -5,7 +5,7 @@ from ecsctl.models import Cluster, Instance, Service, Event, Task, TaskDefinitio
 from ecsctl.serializers import (
     deserialize_instance,
     deserialize_service,
-    deserialize_ecs_task,
+    deserialize_task,
     deserialize_cluster,
     deserialize_task_definition,
 )
@@ -197,7 +197,7 @@ class EcsService:
                 tasks=tasks_chunk,
             )
 
-            tasks = tasks + [deserialize_ecs_task(task) for task in descriptor["tasks"]]
+            tasks = tasks + [deserialize_task(task) for task in descriptor["tasks"]]
         return tasks
 
     def get_containers(self, cluster: str, task_name):
@@ -210,7 +210,7 @@ class EcsService:
             tasks=[task_id_or_arn],
         )
 
-        return deserialize_ecs_task(descriptor["tasks"][0])
+        return deserialize_task(descriptor["tasks"][0])
 
     def get_task_definition(self, definition_family_rev_or_arn: str) -> TaskDefinition:
         descriptor = self.client.describe_task_definition(
