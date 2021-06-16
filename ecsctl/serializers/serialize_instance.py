@@ -3,8 +3,10 @@ from ecsctl.models import Instance
 
 
 def deserialize_instance(instance: Dict[str, Any]) -> Instance:
+    container_instance_arn = instance.get("containerInstanceArn", "")
     return Instance(
-        instance["containerInstanceArn"],
+        container_instance_arn.split("/")[-1],
+        container_instance_arn,
         instance["ec2InstanceId"],
         instance["status"],
         instance["agentConnected"],
