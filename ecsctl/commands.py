@@ -3,11 +3,11 @@ import click
 import json
 import os
 import subprocess
-import functools
 
 from click import Context
-from ecsctl.api import EcsApi
-from ecsctl.config import Config
+from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
+from ecsctl.services.provider import ServiceProvider
+from ecsctl.services.console import Color
 from ecsctl.serializers import (
     serialize_container,
     serialize_deployment,
@@ -18,34 +18,7 @@ from ecsctl.serializers import (
     serialize_ecs_task,
     serialize_task_definition,
 )
-from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
-from ecsctl.console import Color, Console
-from typing import Any, List, Tuple, TypedDict, Optional
-
-
-class ContainerProps(TypedDict):
-    profile: Optional[str]
-    region: Optional[str]
-    debug: bool
-
-
-class ServiceProvider:
-    def __init__(self, props: ContainerProps):
-        self.props = props
-        self.config = Config()
-        self.console = Console()
-
-    @functools.cached_property
-    def ecs_api(
-        self,
-    ) -> EcsApi:
-        return EcsApi(profile=self.props["profile"], region=self.props["region"])
-
-    def resolve(self) -> Tuple[Config, Console]:
-        return (self.config, self.console)
-
-    def resolve_all(self) -> Tuple[Config, Console, EcsApi]:
-        return (self.config, self.console, self.ecs_api)
+from typing import Any, List, Optional
 
 
 def output_option(function: Any) -> Any:
@@ -436,14 +409,19 @@ def exec(
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", "task_name", required=False)
 @click.option("--container", "container_name", required=False)
+@click.option("--start", required=False)
+@click.option("--tail", is_flag=True, default=False)
 @click.pass_obj
 def logs(
     obj: ServiceProvider,
     cluster: str,
     task_name: Optional[str],
     container_name: Optional[str],
+    start: Optional[str],
+    tail: bool,
 ):
-    (_, _, ecs_api) = obj.resolve_all()
+    (_, console, ecs_api) = obj.resolve_all()
+    aws_logs = obj.logs
     task = ecs_api.get_task_by_id_or_arn(
         cluster=cluster or obj.config.default_cluster, task_id_or_arn=task_name
     )
@@ -452,5 +430,36 @@ def logs(
         definition_family_rev_or_arn=task.task_definition_arn
     )
 
-    client = boto3.client("logs")
-    paginator = client.get_paginator("filter_log_events")
+    if container_name is None:
+        (container_name, _) = console.choose(
+            "Pick a container:",
+            [container.name for container in definition.container_definitions],
+        )
+
+    container_definition = next(
+        (x for x in definition.container_definitions if x.name == container_name), None
+    )
+
+    if container_definition is None:
+        raise Exception(f"Can't find definition for container {container_name}.")
+
+    log_configuration = container_definition.log_configuration
+    if log_configuration is None or log_configuration.log_driver != "awslogs":
+        raise Exception(
+            f"Invalid logconfiguration for {container_name}, only awslogs supported!"
+        )
+
+    group = log_configuration.options["awslogs-group"]
+    prefix = log_configuration.options["awslogs-stream-prefix"]
+    stream_name = f"{prefix}/{container_name}/{task.id}"
+
+    log_generator = aws_logs.query_logs(
+        group_name=group,
+        stream_name=stream_name,
+        start_time=start,
+        end_time=None,
+        tail=tail,
+    )
+
+    for log_line in log_generator:
+        console.print(log_line.message)

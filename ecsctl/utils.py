@@ -4,7 +4,7 @@ import traceback
 
 
 from click.core import Command, Context
-from ecsctl.config import Config
+from ecsctl.services.config import Config
 from typing import Any, Dict, List, Optional
 
 

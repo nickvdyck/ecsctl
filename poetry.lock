@@ -180,17 +180,6 @@ python-versions = ">=3.6.0"
 future = "*"
 
 [[package]]
-name = "pick"
-version = "1.0.0"
-description = "pick an option in the terminal with a simple GUI"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-
-[package.dependencies]
-windows-curses = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
 name = "pluggy"
 version = "0.13.1"
 description = "plugin and hook calling mechanisms for python"
@@ -308,6 +297,14 @@ botocore = ">=1.12.36,<2.0a.0"
 crt = ["botocore[crt] (>=1.20.29,<2.0a.0)"]
 
 [[package]]
+name = "simple-term-menu"
+version = "1.2.1"
+description = "A Python package which creates simple interactive menus on the command line."
+category = "main"
+optional = false
+python-versions = "~=3.5"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -355,18 +352,10 @@ category = "dev"
 optional = false
 python-versions = "*"
 
-[[package]]
-name = "windows-curses"
-version = "2.2.0"
-description = "Support for the standard curses module on Windows"
-category = "main"
-optional = false
-python-versions = "*"
-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "71565d57c070104a938282ad0985f741b91633236a0f3c9dd5bad84fff48aef8"
+content-hash = "fd57900a19251cd8ad6685cbf55bd7f535dc4aa9dd6231a33aa948a524c7c716"
 
 [metadata.files]
 altgraph = [
@@ -434,10 +423,6 @@ pathspec = [
 ]
 pefile = [
     {file = "pefile-2021.5.24.tar.gz", hash = "sha256:ed79b2353daa58421459abf4d685953bde0adf9f6e188944f97ba9795f100246"},
-]
-pick = [
-    {file = "pick-1.0.0-py2.py3-none-any.whl", hash = "sha256:f32c8bd0fd943490c29e461a8168f4ac267247aaa6a7fc9dd327f97832842b5f"},
-    {file = "pick-1.0.0.tar.gz", hash = "sha256:03f13d4f5bfe74db4b969fb74c0ef110ec443978419d6c0f1f375a0d49539034"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
@@ -517,6 +502,10 @@ s3transfer = [
     {file = "s3transfer-0.4.2-py2.py3-none-any.whl", hash = "sha256:9b3752887a2880690ce628bc263d6d13a3864083aeacff4890c1c9839a5eb0bc"},
     {file = "s3transfer-0.4.2.tar.gz", hash = "sha256:cb022f4b16551edebbb31a377d3f09600dbada7363d8c5db7976e7f47732e1b2"},
 ]
+simple-term-menu = [
+    {file = "simple-term-menu-1.2.1.tar.gz", hash = "sha256:cd6790bea2b04b480238e36f37e957963a2bee6a47f42357f516c8f3e0d6bd88"},
+    {file = "simple_term_menu-1.2.1-py3-none-any.whl", hash = "sha256:b9710f4820c7707ab45c81e4d8e63fc99b0b84878018aea2f6db229e111f8f21"},
+]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
@@ -536,14 +525,4 @@ urllib3 = [
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
-]
-windows-curses = [
-    {file = "windows_curses-2.2.0-cp36-cp36m-win32.whl", hash = "sha256:1452d771ec6f9b3fef037da2b169196a9a12be4e86a6c27dd579adac70c42028"},
-    {file = "windows_curses-2.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:fc0be372fe6da3c39d7093154ce029115a927bf287f34b4c615e2b3f8c23dfaa"},
-    {file = "windows_curses-2.2.0-cp37-cp37m-win32.whl", hash = "sha256:267544e4f60c09af6505e50a69d7f01d7f8a281cf4bd4fc7efc3b32b9a4ef64e"},
-    {file = "windows_curses-2.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:c5cd032bc7d0f03224ab55c925059d98e81795098d59bbd10f7d05c7ea9677ce"},
-    {file = "windows_curses-2.2.0-cp38-cp38-win32.whl", hash = "sha256:84336fe470fa07288daec5c684dec74c0766fec6b3511ccedb4c494804acfbb7"},
-    {file = "windows_curses-2.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:c4a8ce00e82635f06648cc40d99f470be4e3ffeb84f9f7ae9d6a4f68ec6361e7"},
-    {file = "windows_curses-2.2.0-cp39-cp39-win32.whl", hash = "sha256:9aa6ff60be76f5de696dc6dbf7897e3b1e6abcf4c0f741e9a0ee22cd6ef382f8"},
-    {file = "windows_curses-2.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:389228a3df556102e72450f599283094168aa82eee189f501ad9f131a0fc92e1"},
 ]

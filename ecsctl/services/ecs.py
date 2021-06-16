@@ -12,7 +12,7 @@ from ecsctl.serializers import (
 from ecsctl.utils import chunks
 
 
-class EcsApi:
+class EcsService:
     def __init__(self, profile: str = None, region: str = None):
         session = boto3.session.Session(
             profile_name=profile,

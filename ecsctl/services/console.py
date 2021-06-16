@@ -1,7 +1,12 @@
+import functools
+import os
+import sys
+import stat
+
 from datetime import datetime
 from tabulate import tabulate
-from typing import Any, List, Optional
-from pick import pick
+from typing import Any, List, Optional, Tuple
+from simple_term_menu import TerminalMenu
 
 
 def render_column(item: Any) -> str:
@@ -29,7 +34,7 @@ class Console:
         if color is not None:
             reset = Color._RESET
 
-        print(f"{color or ''}{message}{reset}")
+        print(f"{color or ''}{message}{reset}", flush=self.is_output_redirected())
 
     def table(self, items: List[Any]):
         first = items[0]
@@ -55,5 +60,23 @@ class Console:
             )
         )
 
-    def choose(self, title: str, options: List[str]) -> str:
-        return pick(options, title)
+    @functools.lru_cache(maxsize=1)
+    def is_output_redirected(self) -> bool:
+        if os.isatty(sys.stdout.fileno()):
+            return False
+        else:
+            mode = os.fstat(1).st_mode
+            if stat.S_ISFIFO(mode):
+                return True
+            elif stat.S_ISREG(mode):
+                return True
+            else:
+                return False
+
+    def choose(self, title: str, options: List[str]) -> Tuple[str, int]:
+        if self.is_output_redirected():
+            raise Exception("Can't render selection when output is redirected!")
+
+        terminal_menu = TerminalMenu(options, title=title)
+        index = terminal_menu.show()
+        return (options[index], index)

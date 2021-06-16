@@ -155,5 +155,8 @@ class Task:
         if self.type == "EC2":
             self.container_instance_id = container_instance_arn.split("/")[-1]
             self.container_instance_arn = container_instance_arn
+        else:
+            self.container_instance_id = None
+            self.container_instance_arn = None
 
         self.containers = containers
