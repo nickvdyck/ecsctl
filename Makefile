@@ -15,6 +15,9 @@ check: types
 types:
 	poetry run mypy ecsctl || exit 0
 
+.PHONY: lint
+lint:
+	poetry run flake8
 
 .PHONY: fromat
 format:
