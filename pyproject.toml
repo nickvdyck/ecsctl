@@ -14,6 +14,7 @@ boto3 = "^1.17.87"
 click = "^8.0.1"
 tabulate = "^0.8.9"
 simple-term-menu = "^1.2.1"
+flake8-bugbear = "^21.4.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
