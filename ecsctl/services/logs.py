@@ -26,7 +26,7 @@ class LogLine:
         ingestion_time: int,
         event_id: str,
     ):
-        self.log_stream_name = (log_stream_name,)
+        self.log_stream_name = log_stream_name
         self.timestamp = timestamp
         self.message = message
         self.ingestion_time = ingestion_time
