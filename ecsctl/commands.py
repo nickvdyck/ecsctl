@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from click import Context
+from ecsctl import __version__
 from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
 from ecsctl.services.provider import ServiceProvider
 from ecsctl.services.console import Color
@@ -28,6 +29,7 @@ def output_option(function: Any) -> Any:
 
 
 @click.group(cls=ExceptionFormattedGroup)
+@click.version_option(version=__version__)
 @click.option("-p", "--profile", envvar="AWS_PROFILE")
 @click.option("-r", "--region", envvar="AWS_REGION")
 @click.option(

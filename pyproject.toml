@@ -2,6 +2,7 @@
 name = "ecsctl"
 version = "0.1.0"
 description = ""
+license = "MIT"
 authors = ["Nick Van Dyck <vandyck.nick@outlook.com>"]
 
 [tool.poetry.scripts]
