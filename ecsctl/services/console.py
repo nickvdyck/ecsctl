@@ -30,6 +30,7 @@ class Console:
         return input(message)
 
     def print(self, message: Any, color: Optional[Color] = None):
+        reset: Optional[Color] = None
         if color is not None:
             reset = Color._RESET
 
