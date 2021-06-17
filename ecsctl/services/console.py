@@ -30,12 +30,10 @@ class Console:
         return input(message)
 
     def print(self, message: Any, color: Optional[Color] = None):
-        reset = ""
-
         if color is not None:
             reset = Color._RESET
 
-        print(f"{color or ''}{message}{reset}", flush=self.is_output_redirected())
+        print(f"{color or ''}{message}{reset or ''}", flush=self.is_output_redirected())
 
     def table(self, items: List[Any]):
         first = items[0]

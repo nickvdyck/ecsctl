@@ -54,9 +54,9 @@ def serialize_mount_point(mount_point: MountPoint) -> Dict[str, Any]:
 
 def deserialize_log_configuration(
     log_config: Optional[Dict[str, Any]]
-) -> LogConfiguration:
+) -> Optional[LogConfiguration]:
     if log_config is None:
-        return LogConfiguration.EMPTY
+        return None
 
     return LogConfiguration(
         log_driver=log_config["logDriver"],
@@ -66,9 +66,9 @@ def deserialize_log_configuration(
 
 
 def serialize_log_configuration(
-    log_config: LogConfiguration,
+    log_config: Optional[LogConfiguration],
 ) -> Optional[Dict[str, Any]]:
-    if log_config is log_config.EMPTY:
+    if log_config is None:
         return None
 
     return {
@@ -78,9 +78,9 @@ def serialize_log_configuration(
     }
 
 
-def deserialize_health_check(health: Optional[Dict[str, Any]]) -> HealthCheck:
+def deserialize_health_check(health: Optional[Dict[str, Any]]) -> Optional[HealthCheck]:
     if health is None:
-        return HealthCheck.EMPTY
+        return None
 
     return HealthCheck(
         command=health["command"],
@@ -91,8 +91,8 @@ def deserialize_health_check(health: Optional[Dict[str, Any]]) -> HealthCheck:
     )
 
 
-def serialize_health_check(health: HealthCheck) -> Optional[Dict[str, Any]]:
-    if health is HealthCheck.EMPTY:
+def serialize_health_check(health: Optional[HealthCheck]) -> Optional[Dict[str, Any]]:
+    if health is None:
         return None
 
     return {

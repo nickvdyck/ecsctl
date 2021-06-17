@@ -74,7 +74,7 @@ class AwsVpcConfiguration:
 
 @dataclass(frozen=True)
 class NetworkConfiguration:
-    wsvpc_configuration: Optional[AwsVpcConfiguration]
+    awsvpc_configuration: Optional[AwsVpcConfiguration]
 
 
 class DeploymentController(TypedDict):

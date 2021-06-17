@@ -101,7 +101,7 @@ class AWSLogs:
                 event["eventId"],
             )
 
-    def parse_time_ago(self, timing: Optional[str]) -> int:
+    def parse_time_ago(self, timing: Optional[str]) -> Optional[int]:
         if timing is None:
             return None
 

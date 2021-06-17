@@ -41,9 +41,6 @@ class LogConfiguration:
     secret_options: Optional[List[Secret]]
 
 
-LogConfiguration.EMPTY = LogConfiguration("", {}, [])
-
-
 @dataclass(frozen=True)
 class HealthCheck:
     __slots__ = ("command", "interval", "timeout", "retries", "start_period")
@@ -52,9 +49,6 @@ class HealthCheck:
     timeout: int
     retries: int
     start_period: int
-
-
-HealthCheck.EMPTY = HealthCheck([], 0, 0, 0, 0)
 
 
 @dataclass(frozen=True)
