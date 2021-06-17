@@ -30,7 +30,9 @@ def output_option(function: Any) -> Any:
 @click.group(cls=ExceptionFormattedGroup)
 @click.option("-p", "--profile", envvar="AWS_PROFILE")
 @click.option("-r", "--region", envvar="AWS_REGION")
-@click.option("--debug", is_flag=True, default=False)
+@click.option(
+    "--debug", help="Print verbose error messages", is_flag=True, default=False
+)
 @click.pass_context
 def cli(ctx: Context, profile: str, region: str, debug: bool):
     ctx.obj = ServiceProvider(
@@ -42,7 +44,7 @@ def cli(ctx: Context, profile: str, region: str, debug: bool):
     )
 
 
-@cli.group(short_help="ECSctl configuration")
+@cli.group(short_help="Modify ecsctl config files")
 def config():
     pass
 
@@ -275,7 +277,7 @@ def get_definitions(
         console.table([definition])
 
 
-@cli.command(short_help="Execute commands inside an ECS cluster")
+@cli.command(short_help="Execute commands inside a container or EC2 instance.")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", required=False)
 @click.option("-s", "--service", required=False)
@@ -404,7 +406,7 @@ def exec(
             pass
 
 
-@cli.command(short_help="Execute commands inside an ECS cluster")
+@cli.command(short_help="Print the logs from a container in a service or task")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-t", "--task", "task_name", required=False)
 @click.option("--container", "container_name", required=False)
