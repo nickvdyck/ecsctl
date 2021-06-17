@@ -88,7 +88,7 @@ class EcsService:
             list_all_instance_arns() if len(instance_names) == 0 else instance_names
         )
 
-        instances = []
+        instances: List[Instance] = []
 
         for instance_chunks in chunks(instance_arns, 100):
             descriptor = self.client.describe_container_instances(
@@ -121,7 +121,7 @@ class EcsService:
             list_all_service_arns() if len(service_names) == 0 else service_names
         )
 
-        services = []
+        services: List[Service] = []
 
         for services_chunk in chunks(service_arns, 10):
             descriptor = self.client.describe_services(
@@ -139,7 +139,6 @@ class EcsService:
             cluster=cluster, services=[service_name]
         )
         services: List[Any] = descriptor["services"]
-        service = None
 
         if len(services) > 0:
             service = deserialize_service(descriptor["services"][0])
@@ -189,7 +188,7 @@ class EcsService:
         else:
             task_arns = task_names_or_arns
 
-        tasks = []
+        tasks: List[Task] = []
 
         for tasks_chunk in chunks(task_arns, 100):
             descriptor = self.client.describe_tasks(

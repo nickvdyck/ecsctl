@@ -4,6 +4,7 @@ import sys
 import stat
 
 from datetime import datetime
+from enum import Enum
 from tabulate import tabulate
 from typing import Any, List, Optional, Tuple
 from simple_term_menu import TerminalMenu
@@ -18,7 +19,7 @@ def render_column(item: Any) -> str:
         return str(item)
 
 
-class Color:
+class Color(Enum):
     RED = "\u001b[31m"
     YELLOW = "\u001b[33m"
     _RESET = "\u001b[0m"

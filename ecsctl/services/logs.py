@@ -49,7 +49,7 @@ class AWSLogs:
         self,
         group_name: str,
         stream_name: str,
-        start_time: str,
+        start_time: Optional[str],
         end_time: Optional[str],
         tail: bool = False,
     ):
@@ -111,7 +111,9 @@ class AWSLogs:
             amount, unit = ago_match.groups()
             amount = int(amount)
             unit_as_seconds = TIMINGS[unit[0]]
-            date = datetime.utcnow() + timedelta(seconds=unit_as_seconds * amount * -1)
+            date = datetime.utcnow() + timedelta(
+                seconds=float(unit_as_seconds * amount * -1)
+            )
         else:
             try:
                 date = parse(timing)

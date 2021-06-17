@@ -344,11 +344,16 @@ def exec(
         )
 
     if ec2:
+        if selected_task.container_instance_id is None:
+            raise Exception(
+                f"Task not running on an EC2 backed instance, launch type is {selected_task.launch_type}."
+            )
+
         constainer_instances = ecs_api.get_instances(
             cluster or config.default_cluster, [selected_task.container_instance_id]
         )
 
-        ec2_instance = constainer_instances[0].ec2_instance
+        ec2_instance = constainer_instances[0].ec2_instance_id
 
         cmd = ["aws"]
 
@@ -410,7 +415,7 @@ def exec(
 
 @cli.command(short_help="Print the logs from a container in a service or task")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
-@click.option("-t", "--task", "task_name", required=False)
+@click.option("-t", "--task", "task_name", required=True)
 @click.option("--container", "container_name", required=False)
 @click.option("--start", required=False)
 @click.option("--tail", is_flag=True, default=False)
@@ -418,7 +423,7 @@ def exec(
 def logs(
     obj: ServiceProvider,
     cluster: str,
-    task_name: Optional[str],
+    task_name: str,
     container_name: Optional[str],
     start: Optional[str],
     tail: bool,

@@ -40,7 +40,7 @@ class Deployment:
     created_at: datetime
     updated_at: datetime
     launch_type: str
-    rollout_sate: str
+    rollout_state: str
     rollout_state_reason: str
 
 
