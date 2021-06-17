@@ -1,12 +1,14 @@
+from ecsctl.serializers.serialize_log import deserialize_log_line
 import re
 import time
 
 from boto3.session import Session
+from ecsctl.models.log import LogLine
 from collections import deque
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from dateutil.tz import tzutc
-from typing import Optional
+from typing import Generator, Optional, Union
 
 
 ONE_MINUTE = 60
@@ -15,22 +17,6 @@ ONE_DAY = 24 * ONE_HOUR
 ONE_WEEK = 7 * ONE_DAY
 
 TIMINGS = {"m": ONE_MINUTE, "h": ONE_HOUR, "d": ONE_DAY, "w": ONE_WEEK}
-
-
-class LogLine:
-    def __init__(
-        self,
-        log_stream_name: str,
-        timestamp: int,
-        message: str,
-        ingestion_time: int,
-        event_id: str,
-    ):
-        self.log_stream_name = log_stream_name
-        self.timestamp = timestamp
-        self.message = message
-        self.ingestion_time = ingestion_time
-        self.event_id = event_id
 
 
 class AWSLogs:
@@ -52,13 +38,13 @@ class AWSLogs:
         start_time: Optional[str],
         end_time: Optional[str],
         tail: bool = False,
-    ):
+    ) -> Generator[LogLine, None, None]:
         start_timestamp = self.parse_time_ago(start_time)
         end_timestamp = self.parse_time_ago(end_time)
 
         do_wait = object()
 
-        def log_generator():
+        def log_generator() -> Generator[Union[LogLine, object], None, None]:
             interleaving_sanity = deque(maxlen=self.MAX_EVENTS_PER_CALL)
             kwargs = {
                 "logGroupName": group_name,
@@ -76,30 +62,26 @@ class AWSLogs:
                 response = self.client.filter_log_events(**kwargs)
 
                 for event in response.get("events", []):
-                    if event["eventId"] not in interleaving_sanity:
-                        interleaving_sanity.append(event["eventId"])
-                        yield event
+                    log_line = deserialize_log_line(event)
+
+                    if log_line.event_id not in interleaving_sanity:
+                        interleaving_sanity.append(log_line.event_id)
+                        yield log_line
 
                 if "nextToken" in response:
                     kwargs["nextToken"] = response["nextToken"]
                 else:
                     yield do_wait
 
-        for event in log_generator():
-            if event is do_wait:
+        for log_line in log_generator():
+            if log_line is do_wait:
                 if tail:
                     time.sleep(self.tail_interval)
                     continue
                 else:
                     return
 
-            yield LogLine(
-                event["logStreamName"],
-                event["timestamp"],
-                event["message"],
-                event["ingestionTime"],
-                event["eventId"],
-            )
+            yield log_line
 
     def parse_time_ago(self, timing: Optional[str]) -> Optional[int]:
         if timing is None:
