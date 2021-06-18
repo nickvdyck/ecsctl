@@ -87,7 +87,7 @@ def deserialize_health_check(health: Optional[Dict[str, Any]]) -> Optional[Healt
         interval=health["interval"],
         timeout=health["timeout"],
         retries=health["retries"],
-        start_period=health["startPeriod"],
+        start_period=health.get("startPeriod", None),
     )
 
 

@@ -71,7 +71,7 @@ def deserialize_container(container: Dict[str, Any]) -> Container:
         container["name"],
         container["image"],
         container.get("imageDigest", None),
-        container["runtimeId"],
+        container.get("runtimeId", None),
         container["lastStatus"],
         container.get("exitCode", None),
         container.get("reason", ""),
