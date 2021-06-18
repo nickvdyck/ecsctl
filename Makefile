@@ -23,6 +23,9 @@ lint:
 format:
 	poetry run black .
 
+.PHONY: test
+test:
+	poetry run pytest
 
 .PHONY: build
 build: build-wheel
