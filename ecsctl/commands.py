@@ -1,5 +1,6 @@
 import click
 import json
+import math
 import os
 import subprocess
 
@@ -499,3 +500,22 @@ def logs(
             click.echo(log_line.message)
         else:
             console.print(log_line.message)
+
+
+@cli.group(short_help="Manage and rollout ECS deployments", cls=AliasedGroup)
+def rollout():
+    pass
+
+
+@rollout.command(name="restart")
+@click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.argument("service_name")
+@click.pass_obj
+def rollout_restart(obj: ServiceProvider, cluster: str, service_name: str):
+    (config, console, ecs_api) = obj.resolve_all()
+
+    cluster = cluster or config.default_cluster
+
+    redeployed_service = ecs_api.redeploy_service(cluster=cluster, service=service_name)
+
+    console.print(f"Redeployed {redeployed_service.name}: {redeployed_service.status}!")
