@@ -216,3 +216,9 @@ class EcsService:
             taskDefinition=definition_family_rev_or_arn
         )
         return deserialize_task_definition(descriptor["taskDefinition"])
+
+    def redeploy_service(self, cluster: str, service: str):
+        response = self.client.update_service(
+            cluster=cluster, service=service, forceNewDeployment=True
+        )
+        return deserialize_service(response["service"])
