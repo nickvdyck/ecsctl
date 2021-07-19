@@ -447,7 +447,7 @@ def logs(
         tasks = ecs_api.get_tasks(cluster=cluster, task_names_or_arns=[task_name])
 
     if len(tasks) == 0:
-        raise Exception(f"No tasks found for given options!")
+        raise Exception("No tasks found for given options!")
 
     # TODO: Multiple task definitions can have different configurations!
     task = tasks[0]
