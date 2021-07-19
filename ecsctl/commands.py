@@ -191,7 +191,9 @@ def get_deployments(
 ) -> None:
     (config, console, ecs_api) = obj.resolve_all()
 
-    services = ecs_api.get_services(cluster or config.default_cluster, service_names=[service_name])
+    services = ecs_api.get_services(
+        cluster or config.default_cluster, service_names=[service_name]
+    )
     deployments = services[0].deployments
 
     deployments = sorted(deployments, key=lambda x: x.created_at, reverse=True)
