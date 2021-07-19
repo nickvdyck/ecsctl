@@ -5,7 +5,7 @@ import subprocess
 
 from click import Context
 from ecsctl import __version__
-from ecsctl.utils import ExceptionFormattedGroup, AliasedGroup
+from ecsctl.utils import AliasedGroup, BASE_SHELL_COLORS, ExceptionFormattedGroup
 from ecsctl.services.provider import ServiceProvider
 from ecsctl.services.console import Color
 from ecsctl.serializers import (
@@ -417,7 +417,8 @@ def exec(
 
 @cli.command(short_help="Print the logs from a container in a service or task")
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
-@click.option("-t", "--task", "task_name", required=True)
+@click.option("-s", "--service", "service_name", required=False)
+@click.option("-t", "--task", "task_name", required=False)
 @click.option("--container", "container_name", required=False)
 @click.option("--start", required=False)
 @click.option("--tail", is_flag=True, default=False)
@@ -425,17 +426,30 @@ def exec(
 def logs(
     obj: ServiceProvider,
     cluster: str,
-    task_name: str,
+    service_name: Optional[str],
+    task_name: Optional[str],
     container_name: Optional[str],
     start: Optional[str],
     tail: bool,
 ):
-    (_, console, ecs_api) = obj.resolve_all()
-    aws_logs = obj.logs
-    task = ecs_api.get_task_by_id_or_arn(
-        cluster=cluster or obj.config.default_cluster, task_id_or_arn=task_name
-    )
+    if service_name is None and task_name is None:
+        raise Exception("Invalid options: either --service or --task is required.")
 
+    (config, console, ecs_api) = obj.resolve_all()
+    aws_logs = obj.logs
+
+    cluster = cluster or config.default_cluster
+
+    if service_name is not None:
+        tasks = ecs_api.get_tasks(cluster=cluster, service=service_name)
+    else:
+        tasks = ecs_api.get_tasks(cluster=cluster, task_names_or_arns=[task_name])
+
+    if len(tasks) == 0:
+        raise Exception(f"No tasks found for given options!")
+
+    # TODO: Multiple task definitions can have different configurations!
+    task = tasks[0]
     definition = ecs_api.get_task_definition(
         definition_family_rev_or_arn=task.task_definition_arn
     )
@@ -461,15 +475,27 @@ def logs(
 
     group = log_configuration.options["awslogs-group"]
     prefix = log_configuration.options["awslogs-stream-prefix"]
-    stream_name = f"{prefix}/{container_name}/{task.id}"
+
+    stream_names = [f"{prefix}/{container_name}/{task.id}" for task in tasks]
 
     log_generator = aws_logs.query_logs(
         group_name=group,
-        stream_names=[stream_name],
+        stream_names=stream_names,
         start_time=start,
         end_time=None,
         tail=tail,
     )
 
+    multiple = math.ceil(len(stream_names) / len(BASE_SHELL_COLORS))
+    color_map = dict(zip(stream_names, BASE_SHELL_COLORS * multiple))
+
+    task_num = len(tasks)
     for log_line in log_generator:
-        console.print(log_line.message)
+        if task_num > 1:
+            task_id = log_line.log_stream_name.split("/")[-1]
+            color = color_map.get(log_line.log_stream_name, "green")
+            click.echo(click.style(task_id, fg=color), nl=False)
+            click.echo(": ", nl=False)
+            click.echo(log_line.message)
+        else:
+            console.print(log_line.message)

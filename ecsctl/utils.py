@@ -7,6 +7,17 @@ from click.core import Command, Context
 from ecsctl.services.config import Config
 from typing import Any, Dict, List, Optional
 
+BASE_SHELL_COLORS = [
+    "red",
+    "green",
+    "blue",
+    "magenta",
+    "cyan",
+    "yellow",
+    "black",
+    "white",
+]
+
 
 # stolen from: https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
 def chunks(items: List[Any], n: int):
