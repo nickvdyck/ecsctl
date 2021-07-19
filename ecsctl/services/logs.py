@@ -8,7 +8,7 @@ from collections import deque
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from dateutil.tz import tzutc
-from typing import Generator, Optional, Union
+from typing import Generator, List, Optional, Union
 
 
 ONE_MINUTE = 60
@@ -34,7 +34,7 @@ class AWSLogs:
     def query_logs(
         self,
         group_name: str,
-        stream_name: str,
+        stream_names: List[str],
         start_time: Optional[str],
         end_time: Optional[str],
         tail: bool = False,
@@ -48,7 +48,7 @@ class AWSLogs:
             interleaving_sanity = deque(maxlen=self.MAX_EVENTS_PER_CALL)
             kwargs = {
                 "logGroupName": group_name,
-                "logStreamNames": [stream_name],
+                "logStreamNames": stream_names,
                 "interleaved": True,
             }
 

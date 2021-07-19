@@ -463,7 +463,7 @@ def logs(
 
     log_generator = aws_logs.query_logs(
         group_name=group,
-        stream_name=stream_name,
+        stream_names=[stream_name],
         start_time=start,
         end_time=None,
         tail=tail,
