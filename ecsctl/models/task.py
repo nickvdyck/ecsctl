@@ -2,6 +2,17 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, List, Optional, Union
 
+from ecsctl.models.common import KeyValuePair
+
+
+@dataclass(frozen=True)
+class Attachment:
+    __slots__ = ("id", "type", "status", "details")
+    id: str
+    type: str
+    status: Literal["PRECREATED", "CREATED", "ATTACHING", "ATTACHED", "DETACHING", "DETACHED", "DELETED"]
+    details: List[KeyValuePair]
+
 
 @dataclass(frozen=True)
 class NetworkBinding:
@@ -108,3 +119,4 @@ class Task:
     stopped_reason: str
     tags: List[str]
     containers: List[Container]
+    attachments: List[Attachment]
