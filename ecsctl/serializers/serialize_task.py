@@ -8,13 +8,15 @@ from ecsctl.models import (
     Task,
 )
 
+
 def deserialize_attachment(attachment: Dict[str, Any]) -> Attachment:
     return Attachment(
         attachment["id"],
         attachment["type"],
         attachment["status"],
-        attachment.get("details", [])
+        attachment.get("details", []),
     )
+
 
 def serialize_attachment(attachment: Attachment) -> Dict[str, Any]:
     return {
@@ -186,7 +188,10 @@ def deserialize_task(task: Dict[str, Any]) -> Task:
         task.get("stoppedReason", ""),
         task["tags"],
         [deserialize_container(container) for container in task["containers"]],
-        [deserialize_attachment(attachment) for attachment in task.get("attachments", [])]
+        [
+            deserialize_attachment(attachment)
+            for attachment in task.get("attachments", [])
+        ],
     )
 
 
@@ -215,7 +220,9 @@ def serialize_task(task: Task) -> Dict[str, str]:
         "started_by": task.started_by,
         "stopped_reason": task.stopped_reason,
         "tags": task.tags,
-        "attachments": [serialize_attachment(attachment) for attachment in task.attachments]
+        "attachments": [
+            serialize_attachment(attachment) for attachment in task.attachments
+        ],
     }
 
     if task.launch_type == "ECS":

@@ -10,7 +10,15 @@ class Attachment:
     __slots__ = ("id", "type", "status", "details")
     id: str
     type: str
-    status: Literal["PRECREATED", "CREATED", "ATTACHING", "ATTACHED", "DETACHING", "DETACHED", "DELETED"]
+    status: Literal[
+        "PRECREATED",
+        "CREATED",
+        "ATTACHING",
+        "ATTACHED",
+        "DETACHING",
+        "DETACHED",
+        "DELETED",
+    ]
     details: List[KeyValuePair]
 
 
