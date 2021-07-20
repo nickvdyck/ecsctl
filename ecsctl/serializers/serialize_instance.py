@@ -20,7 +20,7 @@ def deserialize_instance(instance: Dict[str, Any]) -> Instance:
 def serialize_instance(instance: Instance) -> Dict[str, Any]:
     return {
         "id": instance.id,
-        "ec2_instance": instance.ec2_instance,
+        "ec2_instance_id": instance.ec2_instance_id,
         "status": instance.status,
         "running_tasks": instance.running_tasks,
         "pending_tasks": instance.pending_tasks,
