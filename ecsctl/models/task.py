@@ -108,6 +108,7 @@ class Task:
     desired_status: str
     health: Literal["HEALTHY", "UNHEALTHY", "UNKNOWN"]
     launch_type: Literal["EC2", "FARGATE", "EXTERNAL"]
+    enable_execute_command: bool
     cpu: int
     memory: int
     group: str
