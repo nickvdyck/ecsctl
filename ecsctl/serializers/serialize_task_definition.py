@@ -108,6 +108,8 @@ def deserialize_container_definition(definition: Dict[str, Any]) -> ContainerDef
     return ContainerDefinition(
         name=definition["name"],
         image=definition["image"],
+        entrypoint=definition.get("entryPoint", None),
+        command=definition.get("command", None),
         cpu=definition.get("cpu", None),
         memory=definition.get("memory", None),
         memory_reservation=definition.get("memoryReservation", None),
@@ -132,10 +134,12 @@ def deserialize_container_definition(definition: Dict[str, Any]) -> ContainerDef
     )
 
 
-def serialize_container_defintion(definition: ContainerDefinition) -> Dict[str, Any]:
+def serialize_container_definition(definition: ContainerDefinition) -> Dict[str, Any]:
     json_dict = {
         "name": definition.name,
         "image": definition.image,
+        "entrypoint": definition.entrypoint,
+        "command": definition.command,
         "cpu": definition.cpu,
         "memory": definition.memory,
         "memory_reservation": definition.memory_reservation,

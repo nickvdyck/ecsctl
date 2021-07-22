@@ -55,6 +55,8 @@ class HealthCheck:
 class ContainerDefinition:
     name: str
     image: str
+    entrypoint: Optional[List[str]]
+    command: Optional[List[str]]
     cpu: Optional[int]
     memory: Optional[int]
     memory_reservation: Optional[int]
