@@ -190,7 +190,7 @@ def serialize_task_definition(definition: TaskDefinition) -> Dict[str, Any]:
     json_dict = {
         "arn": definition.arn,
         "container_definitions": [
-            serialize_container_defintion(container)
+            serialize_container_definition(container)
             for container in definition.container_definitions
         ],
         "family": definition.family,
