@@ -2,7 +2,36 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, List, Optional, Union
 
-from ecsctl.models.common import KeyValuePair
+from ecsctl.models.common import EnvironmentFile, KeyValuePair, ResourceRequirement
+
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+@dataclass(frozen=True)
+class ContainerOverride:
+    __slots__ = (
+        "name",
+        "command",
+        "cpu",
+        "memory",
+        "memory_reservation",
+        "environment",
+        "environment_files",
+        "resource_requirements",
+    )
+    name: Optional[str]
+    command: Optional[List[str]]
+    cpu: Optional[int]
+    memory: Optional[int]
+    memory_reservation: Optional[int]
+    environment: Optional[List[KeyValuePair]]
+    environment_files: Optional[List[EnvironmentFile]]
+    resource_requirements: Optional[List[ResourceRequirement]]
+
+
+@dataclass(frozen=True)
+class InferenceAcceleratorOverride:
+    __slots__ = ("device_name", "device_type")
+    device_name: str
+    device_type: str
 
 
 @dataclass(frozen=True)
@@ -81,6 +110,15 @@ class Container:
     gpu_ids: List[str]
 
 
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_TaskOverride.html
+@dataclass(frozen=True)
+class TaskOverride:
+    container_overrides: Optional[List[ContainerOverride]]
+    cpu: Optional[str]
+    inference_accelerator_overrides: Optional[List[InferenceAcceleratorOverride]]
+
+
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html
 @dataclass(frozen=True)
 class Task:
     DEFAULT_COLUMNS = [
@@ -129,3 +167,4 @@ class Task:
     tags: List[str]
     containers: List[Container]
     attachments: List[Attachment]
+    overrides: Optional[TaskOverride]

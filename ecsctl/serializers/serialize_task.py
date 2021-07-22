@@ -1,3 +1,9 @@
+from ecsctl.utils import filter_empty_values
+from ecsctl.models.task import (
+    ContainerOverride,
+    InferenceAcceleratorOverride,
+    TaskOverride,
+)
 from typing import Any, Dict
 from ecsctl.models import (
     Attachment,
@@ -147,11 +153,92 @@ def serialize_container(container: Container) -> Dict[str, Any]:
     return json
 
 
+def deserialize_container_overrides(override: Dict[str, Any]) -> ContainerOverride:
+    return ContainerOverride(
+        override.get("name", None),
+        override.get("command", None),
+        override.get("cpu", None),
+        override.get("memory", None),
+        override.get("memoryReservation", None),
+        override.get("environment", None),
+        override.get("environmentFiles", None),
+        override.get("resourceRequirements", None),
+    )
+
+
+def serialize_container_overrides(override: ContainerOverride) -> Dict[str, Any]:
+    json = {
+        "name": override.name,
+        "command": override.command,
+        "cpu": override.cpu,
+        "memory": override.memory,
+        "memory_reservation": override.memory_reservation,
+        "environment": override.environment,
+        "environment_files": override.environment_files,
+        "resource_requirements": override.resource_requirements,
+    }
+    return filter_empty_values(json)
+
+
+def deserialize_inference_accelerator_override(
+    override: Dict[str, Any]
+) -> InferenceAcceleratorOverride:
+    return InferenceAcceleratorOverride(
+        override.get("deviceName", None), override.get("deviceType", None)
+    )
+
+
+def serialize_inference_accelerator_override(
+    override: InferenceAcceleratorOverride,
+) -> Dict[str, Any]:
+    json = {"device_name": override.device_name, "device_type": override.device_type}
+
+    return filter_empty_values(json)
+
+
+def deserialize_task_override(task_override: Dict[str, Any]) -> TaskOverride:
+    container_overrides = task_override.get("containerOverrides", None)
+    inference_overrides = task_override.get("inferenceAcceleratorOverrides", None)
+    return TaskOverride(
+        [deserialize_container_overrides(override) for override in container_overrides]
+        if container_overrides is not None
+        else None,
+        task_override.get("cpu", None),
+        [
+            deserialize_inference_accelerator_override(override)
+            for override in inference_overrides
+        ]
+        if container_overrides is not None
+        else None,
+    )
+
+
+def serialize_task_override(task_override: TaskOverride) -> Dict[str, Any]:
+    json = {
+        "container_overrides": [
+            serialize_container_overrides(override)
+            for override in task_override.container_overrides
+        ]
+        if task_override.container_overrides is not None
+        else None,
+        "cpu": task_override.cpu,
+        "inference_accelerator_overrides": [
+            serialize_inference_accelerator_override(override)
+            for override in task_override.inference_accelerator_overrides
+        ]
+        if task_override.inference_accelerator_overrides is not None
+        else None,
+    }
+
+    return filter_empty_values(json)
+
+
 def deserialize_task(task: Dict[str, Any]) -> Task:
     arn = task.get("taskArn", "")
     task_definition_arn = task.get("taskDefinitionArn", "")
     launch_type = task.get("launchType", None)
     container_instance_arn = task.get("containerInstanceArn", "")
+    overrides = task.get("overrides", None)
 
     if launch_type == "EC2":
         container_instance_id = container_instance_arn.split("/")[-1]
@@ -192,6 +279,7 @@ def deserialize_task(task: Dict[str, Any]) -> Task:
             deserialize_attachment(attachment)
             for attachment in task.get("attachments", [])
         ],
+        deserialize_task_override(overrides) if overrides is not None else None,
     )
 
 
@@ -204,8 +292,12 @@ def serialize_task(task: Task) -> Dict[str, str]:
         "cluster_arn": task.cluster_arn,
         "availability_zone": task.availability_zone,
         "connectivity": task.connectivity,
-        "connectivity_at": task.connectivity_at.isoformat(),
-        "created_at": task.created_at.isoformat(),
+        "connectivity_at": task.connectivity_at.isoformat()
+        if task.connectivity_at is not None
+        else None,
+        "created_at": task.created_at.isoformat()
+        if task.created_at is not None
+        else None,
         "status": task.status,
         "desired_status": task.desired_status,
         "health": task.health,
@@ -214,22 +306,31 @@ def serialize_task(task: Task) -> Dict[str, str]:
         "cpu": task.cpu,
         "memory": task.memory,
         "group": task.group,
-        "pull_started_at": task.pull_started_at.isoformat(),
-        "pull_stopped_at": task.pull_stopped_at.isoformat(),
-        "started_at": task.started_at.isoformat(),
+        "pull_started_at": task.pull_started_at.isoformat()
+        if task.pull_started_at is not None
+        else None,
+        "pull_stopped_at": task.pull_stopped_at.isoformat()
+        if task.pull_stopped_at is not None
+        else None,
+        "started_at": task.started_at.isoformat()
+        if task.started_at is not None
+        else None,
         "started_by": task.started_by,
         "stopped_reason": task.stopped_reason,
+        "stopped_at": task.stopped_at.isoformat()
+        if task.stopped_at is not None
+        else None,
         "tags": task.tags,
         "attachments": [
             serialize_attachment(attachment) for attachment in task.attachments
         ],
+        "overrides": serialize_task_override(task.overrides)
+        if task.overrides is not None
+        else None,
     }
 
     if task.launch_type == "ECS":
         task_json["container_instance_id"] = task.container_instance_id
         task_json["container_instance_arn"] = task.container_instance_arn
 
-    if task.stopped_at is not None:
-        task_json["stopped_at"] = task.stopped_at.isoformat()
-
-    return task_json
+    return filter_empty_values(task_json)
