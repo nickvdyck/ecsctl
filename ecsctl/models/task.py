@@ -4,9 +4,15 @@ from typing import Literal, List, Optional, Union
 
 from ecsctl.models.common import EnvironmentFile, KeyValuePair, ResourceRequirement
 
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+
 @dataclass(frozen=True)
 class ContainerOverride:
+    """
+    The overrides that should be sent to a container. An empty container override can be passed in.
+
+    Reference: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+    """
+
     __slots__ = (
         "name",
         "command",
