@@ -211,6 +211,7 @@ def get_deployments(
 @click.argument("task_names", nargs=-1, required=False)
 @click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
 @click.option("-s", "--service", required=False)
+@click.option("-f", "--family", required=False)
 @click.option("-i", "--instance", required=False)
 @click.option("--status", default="RUNNING")
 @output_option
@@ -221,6 +222,7 @@ def get_tasks(
     task_names: Optional[List[str]],
     instance: Optional[str],
     service: Optional[str],
+    family: Optional[str],
     status: Optional[str],
     output: str,
 ):
@@ -231,6 +233,7 @@ def get_tasks(
         task_names_or_arns=list(task_names),
         instance=instance,
         service=service,
+        family=family,
         status=status,
     )
 

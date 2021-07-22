@@ -151,6 +151,7 @@ class EcsService:
         task_names_or_arns: Optional[List[str]] = None,
         instance: Optional[str] = None,
         service: Optional[str] = None,
+        family: Optional[str] = None,
         status: str = "RUNNING",
     ) -> List[Task]:
         def list_all_task_arns(next_token=None, desired_status: str = "RUNNING"):
@@ -166,6 +167,9 @@ class EcsService:
 
             if service is not None:
                 args["serviceName"] = service
+
+            if family is not None:
+                args["family"] = family
 
             response = self.client.list_tasks(**args)
 
