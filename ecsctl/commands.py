@@ -436,9 +436,6 @@ def logs(
     start: Optional[str],
     tail: bool,
 ):
-    if service_name is None and task_name is None:
-        raise Exception("Invalid options: either --service or --task is required.")
-
     (config, console, ecs_api) = obj.resolve_all()
     aws_logs = obj.logs
 
@@ -446,8 +443,10 @@ def logs(
 
     if service_name is not None:
         tasks = ecs_api.get_tasks(cluster=cluster, service=service_name)
-    else:
+    elif task_name is not None:
         tasks = ecs_api.get_tasks(cluster=cluster, task_names_or_arns=[task_name])
+    else:
+        raise Exception("Invalid options: either --service or --task is required.")
 
     if len(tasks) == 0:
         raise Exception("No tasks found for given options!")
