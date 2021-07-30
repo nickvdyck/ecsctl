@@ -62,7 +62,7 @@ class LoadBalancer:
 class DeploymentConfiguration:
     maximum_percent: int
     minimum_healthy_percent: int
-    circuit_breaker: Optional[DeploymentCircuitBreaker]
+    deployment_circuit_breaker: Optional[DeploymentCircuitBreaker]
 
 
 @dataclass(frozen=True)

@@ -70,7 +70,7 @@ def deserialize_deployment_configuration(
     return DeploymentConfiguration(
         configuration["maximumPercent"],
         configuration["minimumHealthyPercent"],
-        configuration.get("circuitBreaker", None),
+        configuration.get("deploymentCircuitBreaker", None),
     )
 
 
@@ -80,7 +80,7 @@ def serialize_deployment_configuration(
     json_dict = {
         "maximum_percent": configuration.maximum_percent,
         "minimum_healthy_percent": configuration.minimum_healthy_percent,
-        "circuit_breaker": configuration.circuit_breaker,
+        "deployment_circuit_breaker": configuration.deployment_circuit_breaker,
     }
     return {k: v for k, v in json_dict.items() if v is not None}
 
