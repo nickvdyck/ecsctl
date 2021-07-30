@@ -171,16 +171,16 @@ def deserialize_task_definition(definition: Dict[str, Any]):
         ],
         family=definition["family"],
         task_role_arn=definition["taskRoleArn"],
-        execution_role_arn=definition["executionRoleArn"],
-        network_mode=definition["networkMode"],
+        execution_role_arn=definition.get("executionRoleArn", None),
+        network_mode=definition.get("networkMode", None),
         revision=definition["revision"],
         status=definition["status"],
         requires_attributes=definition.get("requiresAttributes", []),
         placement_constraints=definition.get("placementConstraints", []),
         compatibilities=definition.get("compatibilities"),
         requires_compatibilities=definition.get("requiresCompatibilities", []),
-        registered_at=definition["registeredAt"],
-        registered_by=definition["registeredBy"],
+        registered_at=definition.get("registeredAt", None),
+        registered_by=definition.get("registeredBy", None),
         deregistered_at=definition.get("deregisteredAt", None),
         deregistered_by=definition.get("deregisteredBy", None),
     )
@@ -203,7 +203,9 @@ def serialize_task_definition(definition: TaskDefinition) -> Dict[str, Any]:
         "placement_constraints": definition.placement_constraints,
         "compatibilities": definition.compatibilities,
         "requires_compatibilities": definition.requires_compatibilities,
-        "registered_at": definition.registered_at.isoformat(),
+        "registered_at": definition.registered_at.isoformat()
+        if definition.registered_at is not None
+        else None,
         "registered_by": definition.registered_by,
         "deregistered_at": definition.deregistered_at.isoformat()
         if definition.deregistered_at is not None
