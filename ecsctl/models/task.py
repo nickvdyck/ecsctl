@@ -145,7 +145,7 @@ class Task:
     cluster_arn: str
     container_instance_id: Optional[str]
     container_instance_arn: Optional[str]
-    availability_zone: str
+    availability_zone: Optional[str]
     connectivity: Literal["CONNECTED", "DISCONNECTED"]
     connectivity_at: datetime
     created_at: datetime

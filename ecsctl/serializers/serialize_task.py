@@ -255,7 +255,7 @@ def deserialize_task(task: Dict[str, Any]) -> Task:
         task["clusterArn"],
         container_instance_id,
         container_instance_arn,
-        task["availabilityZone"],
+        task.get("availabilityZone", None),
         task.get("connectivity", None),
         task.get("connectivityAt", None),
         task["createdAt"],
