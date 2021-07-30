@@ -521,3 +521,18 @@ def rollout_restart(obj: ServiceProvider, cluster: str, service_name: str):
     redeployed_service = ecs_api.redeploy_service(cluster=cluster, service=service_name)
 
     console.print(f"Redeployed {redeployed_service.name}: {redeployed_service.status}!")
+
+
+@cli.command(short_help="Scale the number of tasks running in an ECS SErvice")
+@click.option("-c", "--cluster", envvar="ECS_DEFAULT_CLUSTER", required=False)
+@click.option("-r", "--replicas", required=True, type=int)
+@click.argument("service_name" ,required=True)
+@click.pass_obj
+def scale(obj: ServiceProvider, cluster: str, service_name: str, replicas: int):
+    (config, console, ecs_api) = obj.resolve_all()
+
+    cluster = cluster or config.default_cluster
+
+    scaled_service = ecs_api.scale_service(cluster=cluster, service=service_name, replicas=replicas)
+
+    console.print(f"Scaled service to have {scaled_service.desired} tasks running!")

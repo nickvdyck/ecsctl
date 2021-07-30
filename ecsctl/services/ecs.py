@@ -226,3 +226,9 @@ class EcsService:
             cluster=cluster, service=service, forceNewDeployment=True
         )
         return deserialize_service(response["service"])
+
+    def scale_service(self, cluster: str, service: str, replicas: int):
+        response = self.client.update_service(
+            cluster=cluster, service=service, desiredCount=replicas
+        )
+        return deserialize_service(response["service"])
