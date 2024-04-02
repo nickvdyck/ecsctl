@@ -70,9 +70,9 @@ def serialize_network_interface(interface: NetworkInterface) -> Dict[str, Any]:
 def deserialize_managed_agent(agent: Dict[str, Any]) -> ManagedAgent:
     return ManagedAgent(
         agent["name"],
-        agent["reason"],
-        agent["lastStatus"],
-        agent["lastStartedAt"],
+        agent.get("reason", ""),
+        agent.get("lastStatus", ""),
+        agent.get("lastStartedAt", None),
     )
 
 
@@ -200,34 +200,45 @@ def deserialize_task_override(task_override: Dict[str, Any]) -> TaskOverride:
     container_overrides = task_override.get("containerOverrides", None)
     inference_overrides = task_override.get("inferenceAcceleratorOverrides", None)
     return TaskOverride(
-        [deserialize_container_overrides(override) for override in container_overrides]
-        if container_overrides is not None
-        else None,
+        (
+            [
+                deserialize_container_overrides(override)
+                for override in container_overrides
+            ]
+            if container_overrides is not None
+            else None
+        ),
         task_override.get("cpu", None),
-        [
-            deserialize_inference_accelerator_override(override)
-            for override in inference_overrides
-        ]
-        if container_overrides is not None
-        else None,
+        (
+            [
+                deserialize_inference_accelerator_override(override)
+                for override in inference_overrides
+            ]
+            if container_overrides is not None
+            else None
+        ),
     )
 
 
 def serialize_task_override(task_override: TaskOverride) -> Dict[str, Any]:
     json = {
-        "container_overrides": [
-            serialize_container_overrides(override)
-            for override in task_override.container_overrides
-        ]
-        if task_override.container_overrides is not None
-        else None,
+        "container_overrides": (
+            [
+                serialize_container_overrides(override)
+                for override in task_override.container_overrides
+            ]
+            if task_override.container_overrides is not None
+            else None
+        ),
         "cpu": task_override.cpu,
-        "inference_accelerator_overrides": [
-            serialize_inference_accelerator_override(override)
-            for override in task_override.inference_accelerator_overrides
-        ]
-        if task_override.inference_accelerator_overrides is not None
-        else None,
+        "inference_accelerator_overrides": (
+            [
+                serialize_inference_accelerator_override(override)
+                for override in task_override.inference_accelerator_overrides
+            ]
+            if task_override.inference_accelerator_overrides is not None
+            else None
+        ),
     }
 
     return filter_empty_values(json)
@@ -292,12 +303,14 @@ def serialize_task(task: Task) -> Dict[str, str]:
         "cluster_arn": task.cluster_arn,
         "availability_zone": task.availability_zone,
         "connectivity": task.connectivity,
-        "connectivity_at": task.connectivity_at.isoformat()
-        if task.connectivity_at is not None
-        else None,
-        "created_at": task.created_at.isoformat()
-        if task.created_at is not None
-        else None,
+        "connectivity_at": (
+            task.connectivity_at.isoformat()
+            if task.connectivity_at is not None
+            else None
+        ),
+        "created_at": (
+            task.created_at.isoformat() if task.created_at is not None else None
+        ),
         "status": task.status,
         "desired_status": task.desired_status,
         "health": task.health,
@@ -306,27 +319,33 @@ def serialize_task(task: Task) -> Dict[str, str]:
         "cpu": task.cpu,
         "memory": task.memory,
         "group": task.group,
-        "pull_started_at": task.pull_started_at.isoformat()
-        if task.pull_started_at is not None
-        else None,
-        "pull_stopped_at": task.pull_stopped_at.isoformat()
-        if task.pull_stopped_at is not None
-        else None,
-        "started_at": task.started_at.isoformat()
-        if task.started_at is not None
-        else None,
+        "pull_started_at": (
+            task.pull_started_at.isoformat()
+            if task.pull_started_at is not None
+            else None
+        ),
+        "pull_stopped_at": (
+            task.pull_stopped_at.isoformat()
+            if task.pull_stopped_at is not None
+            else None
+        ),
+        "started_at": (
+            task.started_at.isoformat() if task.started_at is not None else None
+        ),
         "started_by": task.started_by,
         "stopped_reason": task.stopped_reason,
-        "stopped_at": task.stopped_at.isoformat()
-        if task.stopped_at is not None
-        else None,
+        "stopped_at": (
+            task.stopped_at.isoformat() if task.stopped_at is not None else None
+        ),
         "tags": task.tags,
         "attachments": [
             serialize_attachment(attachment) for attachment in task.attachments
         ],
-        "overrides": serialize_task_override(task.overrides)
-        if task.overrides is not None
-        else None,
+        "overrides": (
+            serialize_task_override(task.overrides)
+            if task.overrides is not None
+            else None
+        ),
     }
 
     if task.launch_type == "ECS":

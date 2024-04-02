@@ -80,7 +80,7 @@ class ManagedAgent:
     name: str
     reason: str
     status: str
-    started_at: datetime
+    started_at: Optional[datetime]
 
 
 @dataclass(frozen=True)
