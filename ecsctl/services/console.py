@@ -24,19 +24,23 @@ class Color(Enum):
     YELLOW = "\u001b[33m"
     _RESET = "\u001b[0m"
 
+    def __str__(self):
+        return str(self.value)
+
 
 class Console:
     def input(self, message: str) -> str:
         return input(message)
 
     def print(self, message: Any, color: Optional[Color] = None):
-        reset: Optional[Color] = None
-        if color is not None:
-            reset = Color._RESET
-
+        reset = Color._RESET if color is not None else None
         print(f"{color or ''}{message}{reset or ''}", flush=self.is_output_redirected())
 
     def table(self, items: List[Any]):
+        if len(items) == 0:
+            print("No items found.")
+            return
+
         first = items[0]
 
         table_headers = [
